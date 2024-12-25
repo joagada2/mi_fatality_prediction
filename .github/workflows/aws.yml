@@ -30,8 +30,8 @@ on:
   push:
     branches: [ "main" ]
 
-env:
-  AWS_REGION: us-east-1                   # Set your preferred AWS region, e.g. us-west-1
+env:                
+  AWS_REGION: us-east-1  # Set your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: mi_fatality_prediction  # Set your Amazon ECR repository name
   ECS_SERVICE: fastapi-server             # Set your ECS service name
   ECS_CLUSTER: mi-fatality-cluster       # Set your ECS cluster name
