@@ -11,17 +11,3 @@ services:
     environment:
       - ENV=production  # You can set the environment to production
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000  # Command to run FastAPI app
-
-  # Example: PostgreSQL as a database (optional)
-  db:
-    image: postgres:13
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=your_password
-      - POSTGRES_DB=your_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-    driver: local
