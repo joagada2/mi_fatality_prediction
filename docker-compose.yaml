@@ -5,9 +5,9 @@ services:
     build: .
     container_name: fastapi_app
     ports:
-      - "8000:8000"  # Expose FastAPI on port 8000
+      - "8080:8080"  # Expose FastAPI on port 8000
     volumes:
       - .:/app  # Mount current directory to /app inside the container
     environment:
       - ENV=production  # You can set the environment to production
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000  # Command to run FastAPI app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8080  # Command to run FastAPI app
