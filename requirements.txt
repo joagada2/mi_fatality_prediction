@@ -1,5 +1,5 @@
-pip install fastapi
-pip install pydantic
-pip install joblib
-pip install scikit-learn
-pip install uvicorn
+fastapi
+pydantic
+joblib
+scikit-learn
+uvicorn
