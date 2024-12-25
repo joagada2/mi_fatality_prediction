@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/60244def6a9948bcaed31b34cc447e6a/artifacts
+end_time: 1734911445419
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 60244def6a9948bcaed31b34cc447e6a
+run_name: bright-ram-432
+run_uuid: 60244def6a9948bcaed31b34cc447e6a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734910719712
+status: 3
+tags: []
+user_id: USER

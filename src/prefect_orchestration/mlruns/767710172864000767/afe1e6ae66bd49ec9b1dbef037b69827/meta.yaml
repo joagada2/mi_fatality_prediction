@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/afe1e6ae66bd49ec9b1dbef037b69827/artifacts
+end_time: 1734919315946
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: afe1e6ae66bd49ec9b1dbef037b69827
+run_name: mercurial-whale-53
+run_uuid: afe1e6ae66bd49ec9b1dbef037b69827
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734919315671
+status: 3
+tags: []
+user_id: USER

@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/787819973753392870/8ad3a22a7f6b4cd59ba3f2c702d30f21/artifacts
+end_time: 1734579114812
+entry_point_name: ''
+experiment_id: '787819973753392870'
+lifecycle_stage: active
+run_id: 8ad3a22a7f6b4cd59ba3f2c702d30f21
+run_name: resilient-ox-93
+run_uuid: 8ad3a22a7f6b4cd59ba3f2c702d30f21
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734579114737
+status: 4
+tags: []
+user_id: USER

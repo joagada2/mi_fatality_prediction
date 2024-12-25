@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/787819973753392870/29617e2fc69c48cbaf43f62255ad7d17/artifacts
+end_time: 1734579091687
+entry_point_name: ''
+experiment_id: '787819973753392870'
+lifecycle_stage: active
+run_id: 29617e2fc69c48cbaf43f62255ad7d17
+run_name: unleashed-colt-160
+run_uuid: 29617e2fc69c48cbaf43f62255ad7d17
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734578950905
+status: 3
+tags: []
+user_id: USER

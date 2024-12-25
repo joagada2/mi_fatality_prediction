@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/ee601d3b38444f3797ebf2675224cb3a/artifacts
+end_time: 1734919054748
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: ee601d3b38444f3797ebf2675224cb3a
+run_name: merciful-sloth-619
+run_uuid: ee601d3b38444f3797ebf2675224cb3a
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734919054127
+status: 3
+tags: []
+user_id: USER

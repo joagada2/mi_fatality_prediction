@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/66409a4a13c242abbda89aa13f3dace4/artifacts
+end_time: 1734912840397
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 66409a4a13c242abbda89aa13f3dace4
+run_name: amusing-kite-606
+run_uuid: 66409a4a13c242abbda89aa13f3dace4
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734912840280
+status: 3
+tags: []
+user_id: USER

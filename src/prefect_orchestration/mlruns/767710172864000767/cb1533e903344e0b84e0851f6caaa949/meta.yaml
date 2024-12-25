@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/cb1533e903344e0b84e0851f6caaa949/artifacts
+end_time: 1734911455892
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: cb1533e903344e0b84e0851f6caaa949
+run_name: selective-pig-601
+run_uuid: cb1533e903344e0b84e0851f6caaa949
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734911454773
+status: 3
+tags: []
+user_id: USER

@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/0d50770433d64cfea054cc045f346e39/artifacts
+end_time: 1734912290496
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 0d50770433d64cfea054cc045f346e39
+run_name: stately-fowl-322
+run_uuid: 0d50770433d64cfea054cc045f346e39
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734912289498
+status: 3
+tags: []
+user_id: USER

@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/6eecef68e9434b239f612a70cc7d8c4b/artifacts
+end_time: 1734912838480
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 6eecef68e9434b239f612a70cc7d8c4b
+run_name: bouncy-goose-631
+run_uuid: 6eecef68e9434b239f612a70cc7d8c4b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734912617437
+status: 3
+tags: []
+user_id: USER

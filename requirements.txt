@@ -1,0 +1,5 @@
+pip install fastapi
+pip install pydantic
+pip install joblib
+pip install scikit-learn
+pip install uvicorn

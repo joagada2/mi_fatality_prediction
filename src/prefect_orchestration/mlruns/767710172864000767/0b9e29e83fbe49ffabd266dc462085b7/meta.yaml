@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/0b9e29e83fbe49ffabd266dc462085b7/artifacts
+end_time: 1734920623907
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 0b9e29e83fbe49ffabd266dc462085b7
+run_name: chill-shoat-404
+run_uuid: 0b9e29e83fbe49ffabd266dc462085b7
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734919318710
+status: 3
+tags: []
+user_id: USER

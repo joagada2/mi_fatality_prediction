@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/e8e424217f0640738315762abb41d76c/artifacts
+end_time: 1734912619973
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: e8e424217f0640738315762abb41d76c
+run_name: vaunted-bat-893
+run_uuid: e8e424217f0640738315762abb41d76c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734911897330
+status: 3
+tags: []
+user_id: USER
