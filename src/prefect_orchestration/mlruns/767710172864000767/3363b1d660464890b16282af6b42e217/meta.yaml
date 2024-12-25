@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/3363b1d660464890b16282af6b42e217/artifacts
+end_time: 1734920626594
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 3363b1d660464890b16282af6b42e217
+run_name: rebellious-slug-271
+run_uuid: 3363b1d660464890b16282af6b42e217
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734920626478
+status: 3
+tags: []
+user_id: USER

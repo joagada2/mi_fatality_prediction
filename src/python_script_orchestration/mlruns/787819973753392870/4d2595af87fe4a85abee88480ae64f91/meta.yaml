@@ -1,0 +1,15 @@
+artifact_uri: mlflow-artifacts:/787819973753392870/4d2595af87fe4a85abee88480ae64f91/artifacts
+end_time: 1734579238081
+entry_point_name: ''
+experiment_id: '787819973753392870'
+lifecycle_stage: active
+run_id: 4d2595af87fe4a85abee88480ae64f91
+run_name: likeable-doe-12
+run_uuid: 4d2595af87fe4a85abee88480ae64f91
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734579219846
+status: 3
+tags: []
+user_id: USER

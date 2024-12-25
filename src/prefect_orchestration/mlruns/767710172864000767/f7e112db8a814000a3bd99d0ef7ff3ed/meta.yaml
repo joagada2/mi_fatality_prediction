@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/f7e112db8a814000a3bd99d0ef7ff3ed/artifacts
+end_time: 1734906737729
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: f7e112db8a814000a3bd99d0ef7ff3ed
+run_name: skittish-snail-76
+run_uuid: f7e112db8a814000a3bd99d0ef7ff3ed
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734906737618
+status: 3
+tags: []
+user_id: USER

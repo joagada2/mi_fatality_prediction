@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/a84db494671b4d019ebf22a3532c30a7/artifacts
+end_time: 1734919381091
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: a84db494671b4d019ebf22a3532c30a7
+run_name: classy-newt-426
+run_uuid: a84db494671b4d019ebf22a3532c30a7
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734919379928
+status: 3
+tags: []
+user_id: USER

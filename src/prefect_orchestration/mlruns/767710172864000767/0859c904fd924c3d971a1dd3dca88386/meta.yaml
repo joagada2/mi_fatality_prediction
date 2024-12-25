@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/0859c904fd924c3d971a1dd3dca88386/artifacts
+end_time: 1734912519999
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 0859c904fd924c3d971a1dd3dca88386
+run_name: silent-hen-551
+run_uuid: 0859c904fd924c3d971a1dd3dca88386
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734912518041
+status: 3
+tags: []
+user_id: USER

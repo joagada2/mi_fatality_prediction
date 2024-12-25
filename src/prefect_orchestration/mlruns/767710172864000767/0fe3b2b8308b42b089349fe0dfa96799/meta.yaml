@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/0fe3b2b8308b42b089349fe0dfa96799/artifacts
+end_time: 1734912272059
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 0fe3b2b8308b42b089349fe0dfa96799
+run_name: selective-mule-275
+run_uuid: 0fe3b2b8308b42b089349fe0dfa96799
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734911546533
+status: 3
+tags: []
+user_id: USER

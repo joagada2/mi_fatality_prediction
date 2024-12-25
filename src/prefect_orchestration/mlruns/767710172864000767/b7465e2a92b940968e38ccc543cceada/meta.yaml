@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/b7465e2a92b940968e38ccc543cceada/artifacts
+end_time: 1734905832380
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: b7465e2a92b940968e38ccc543cceada
+run_name: melodic-fox-391
+run_uuid: b7465e2a92b940968e38ccc543cceada
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734905663199
+status: 4
+tags: []
+user_id: USER

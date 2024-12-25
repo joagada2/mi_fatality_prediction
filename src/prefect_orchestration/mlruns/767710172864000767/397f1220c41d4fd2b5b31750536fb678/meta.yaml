@@ -1,0 +1,15 @@
+artifact_uri: file:///C:/Users/USER/Documents/1030/Portfolio_Projects/fatality/src/prefect_orchestration/mlruns/767710172864000767/397f1220c41d4fd2b5b31750536fb678/artifacts
+end_time: 1734911198564
+entry_point_name: ''
+experiment_id: '767710172864000767'
+lifecycle_stage: active
+run_id: 397f1220c41d4fd2b5b31750536fb678
+run_name: sneaky-finch-163
+run_uuid: 397f1220c41d4fd2b5b31750536fb678
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1734910588205
+status: 3
+tags: []
+user_id: USER
