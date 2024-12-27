@@ -120,30 +120,6 @@ jobs:
             exit 1
           fi
 
-          # Build Docker image locally
-          echo "Building Docker image locally..."
-          sudo docker build -t mi_fatality_prediction:latest .
-          if [ $? -ne 0 ]; then
-            echo "Docker image build failed. Exiting."
-            exit 1
-          fi
-
-          # Tag Docker image for ECR
-          echo "Tagging Docker image for ECR..."
-          sudo docker tag mi_fatality_prediction:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
-          if [ $? -ne 0 ]; then
-            echo "Docker image tagging failed. Exiting."
-            exit 1
-          fi
-
-          # Push Docker image to ECR
-          echo "Pushing Docker image to ECR..."
-          sudo docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
-          if [ $? -ne 0 ]; then
-            echo "Docker image push failed. Exiting."
-            exit 1
-          fi
-
           # Pull Docker image from ECR
           echo "Pulling Docker image from ECR..."
           sudo docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
