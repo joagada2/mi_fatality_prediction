@@ -61,9 +61,6 @@ jobs:
         with:
           region: ${{ secrets.AWS_REGION }}
 
-      - name: Pull Docker image from ECR
-        run: docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mi_fatality_prediction:latest
-
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.5.4
         with:
@@ -73,7 +70,7 @@ jobs:
         run: |
           ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy Docker image on EC2
+      - name: Install Docker on EC2 instance and deploy
         env:
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -81,6 +78,20 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           ssh -o "StrictHostKeyChecking=no" $EC2_USER@$EC2_HOST << 'EOF'
+          # Update package database
+          sudo apt-get update
+          
+          # Install Docker
+          sudo apt-get install -y docker.io
+          
+          # Start Docker service
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          
+          # Add user to Docker group
+          sudo usermod -aG docker $USER
+          
+          # Pull and run Docker image
           docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
           docker stop $(docker ps -a -q)
           docker run -d -p 80:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
