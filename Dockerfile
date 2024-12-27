@@ -10,6 +10,9 @@ COPY . /app
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Clean up unnecessary files
+RUN rm -rf /root/.cache
+
 # Make port 80 available to the world outside this container
 EXPOSE 80
 
