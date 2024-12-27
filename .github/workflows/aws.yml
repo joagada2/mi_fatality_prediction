@@ -66,6 +66,10 @@ jobs:
 
           echo "Starting deployment to EC2 instance at $(date)..."
 
+          # Debug: Check environment variables
+          echo "AWS_REGION is: $AWS_REGION"
+          echo "AWS_ACCOUNT_ID is: $AWS_ACCOUNT_ID"
+
           # Update package database
           echo "Updating package database..."
           sudo apt-get update -y
