@@ -13,15 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      # Step 3: Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -29,19 +26,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 4: Login to AWS ECR
       - name: Login to AWS ECR
         uses: aws-actions/amazon-ecr-login@v1
         with:
           region: ${{ secrets.AWS_REGION }}
 
-      # Step 5: Build and tag Docker image
       - name: Build Docker image
         id: build-image
         run: |
           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mi_fatality_prediction:latest .
 
-      # Step 6: Push Docker image to ECR
       - name: Push Docker image to ECR
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mi_fatality_prediction:latest
@@ -51,11 +45,9 @@ jobs:
     needs: build
 
     steps:
-      # Step 1: Checkout the code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 2: Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -63,24 +55,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 3: Login to AWS ECR
       - name: Login to AWS ECR
         uses: aws-actions/amazon-ecr-login@v1
         with:
           region: ${{ secrets.AWS_REGION }}
 
-      # Step 4: Add SSH key for EC2 access
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.5.4
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Step 5: Add EC2 host to known hosts
       - name: Add EC2 host to known hosts
         run: |
           ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # Step 6: Deploy Docker container to EC2
       - name: Deploy Docker container to EC2
         env:
           EC2_USER: ${{ secrets.EC2_USER }}
@@ -91,7 +79,6 @@ jobs:
           ssh -o "StrictHostKeyChecking=no" $EC2_USER@$EC2_HOST << 'EOF'
           set -e  # Exit immediately if a command exits with a non-zero status
 
-          # Log the start of the deployment process
           echo "Starting deployment to EC2 instance at $(date)..."
 
           # Update package database
@@ -112,11 +99,48 @@ jobs:
           sudo systemctl start docker
           sudo systemctl enable docker
 
+          # Install AWS CLI if not installed
+          echo "Checking AWS CLI installation..."
+          if ! command -v aws &> /dev/null; then
+            echo "AWS CLI is not installed. Installing AWS CLI..."
+            sudo apt-get install -y unzip curl
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            echo "AWS CLI installed successfully."
+          else
+            echo "AWS CLI is already installed."
+          fi
+
           # Authenticate with AWS ECR
           echo "Authenticating with AWS ECR..."
           aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
           if [ $? -ne 0 ]; then
             echo "ECR authentication failed. Exiting."
+            exit 1
+          fi
+
+          # Build Docker image locally
+          echo "Building Docker image locally..."
+          sudo docker build -t mi_fatality_prediction:latest .
+          if [ $? -ne 0 ]; then
+            echo "Docker image build failed. Exiting."
+            exit 1
+          fi
+
+          # Tag Docker image for ECR
+          echo "Tagging Docker image for ECR..."
+          sudo docker tag mi_fatality_prediction:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
+          if [ $? -ne 0 ]; then
+            echo "Docker image tagging failed. Exiting."
+            exit 1
+          fi
+
+          # Push Docker image to ECR
+          echo "Pushing Docker image to ECR..."
+          sudo docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
+          if [ $? -ne 0 ]; then
+            echo "Docker image push failed. Exiting."
             exit 1
           fi
 
