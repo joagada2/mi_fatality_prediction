@@ -91,8 +91,11 @@ jobs:
           # Add user to Docker group
           sudo usermod -aG docker $USER
           
+          # Reload shell to apply group change
+          newgrp docker
+          
           # Pull and run Docker image
           docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
-          docker stop $(docker ps -a -q)
+          docker stop $(docker ps -q)
           docker run -d -p 80:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
           EOF
