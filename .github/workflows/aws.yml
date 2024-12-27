@@ -1,3 +1,5 @@
+name: CI/CD Pipeline
+
 on:
   push:
     branches:
@@ -124,7 +126,7 @@ jobs:
           echo "Pulling Docker image..."
           docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
 
-          # Stop and remove any running container
+          # Stop and remove any existing container
           echo "Stopping and removing any running container..."
           RUNNING_CONTAINER=\$(docker ps -q)
           if [ -n "\$RUNNING_CONTAINER" ]; then
@@ -155,9 +157,13 @@ jobs:
               }
           }' | sudo tee /etc/nginx/sites-available/fastapi
 
-          # Enable the Nginx configuration and restart the service
-          echo "Enabling Nginx configuration..."
+          # Remove any existing symlink and recreate it
+          echo "Removing any existing Nginx symlink and enabling configuration..."
+          sudo rm -f /etc/nginx/sites-enabled/fastapi || true
           sudo ln -s /etc/nginx/sites-available/fastapi /etc/nginx/sites-enabled/
+
+          # Test Nginx configuration
+          echo "Testing Nginx configuration..."
           sudo nginx -t
 
           # Check Nginx status and logs
