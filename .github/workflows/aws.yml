@@ -105,7 +105,7 @@ jobs:
 
           # Authenticate with AWS ECR
           echo "Authenticating with AWS ECR..."
-          aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+          sudo aws ecr get-login-password --region $AWS_REGION | sudo docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
           # Pull Docker image from ECR
           echo "Pulling Docker image..."
