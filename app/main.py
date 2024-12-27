@@ -56,4 +56,4 @@ if __name__ == "__main__":
         print("Feature names:", model.feature_names_in_)
     else:
         print("Model does not provide feature names.")
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
