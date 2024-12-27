@@ -109,14 +109,30 @@ jobs:
             sudo ./aws/install
           fi
 
-          # Configure AWS CLI credentials
-          echo "Configuring AWS CLI credentials..."
-          mkdir -p ~/.aws
-          echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
-          echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
-          echo "[default]" > ~/.aws/config
-          echo "region=$AWS_REGION" >> ~/.aws/config
+          # Install Nginx if not installed
+          echo "Installing Nginx..."
+          sudo apt-get install -y nginx
+
+          # Configure Nginx as a reverse proxy
+          echo "Configuring Nginx..."
+          sudo tee /etc/nginx/sites-available/fastapi <<EOF_NGINX
+          server {
+              listen 80;
+              server_name localhost;
+
+              location / {
+                  proxy_pass http://127.0.0.1:8000;
+                  proxy_set_header Host \$host;
+                  proxy_set_header X-Real-IP \$remote_addr;
+                  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+          }
+          EOF_NGINX
+
+          sudo ln -s /etc/nginx/sites-available/fastapi /etc/nginx/sites-enabled/
+          sudo nginx -t
+          sudo systemctl restart nginx
 
           # Authenticate with AWS ECR
           echo "Authenticating with AWS ECR..."
@@ -136,7 +152,7 @@ jobs:
 
           # Run the Docker container
           echo "Running the Docker container..."
-          docker run -d -p 80:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
+          docker run -d -p 8000:8000 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
 
           echo "Deployment completed successfully!"
           EOF
