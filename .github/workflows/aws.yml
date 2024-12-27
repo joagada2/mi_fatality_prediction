@@ -34,11 +34,11 @@ jobs:
       - name: Build Docker image
         id: build-image
         run: |
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-custom-image-name:latest .
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mi_fatality_prediction:latest .
 
       - name: Push Docker image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/my-custom-image-name:latest
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mi_fatality_prediction:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -94,7 +94,7 @@ jobs:
           newgrp docker
           
           # Pull Docker image from ECR
-          docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/my-custom-image-name:latest
+          docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
           
           # Stop and remove any running containers
           RUNNING_CONTAINER=$(docker ps -q)
@@ -104,5 +104,5 @@ jobs:
           fi
           
           # Run Docker container
-          docker run -d -p 80:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/my-custom-image-name:latest
+          docker run -d -p 80:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
           EOF
