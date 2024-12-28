@@ -1,5 +1,5 @@
 # send request to the api from comand line
-curl -X POST http://3.143.204.49:8080/predict \
+curl -X POST http://3.17.13.87:80/predict \
   -H "Content-Type: application/json" \
   -d '[{ "AGE": 0,
          "SEX": 0,
@@ -114,7 +114,7 @@ import requests
 import json
 
 # Define the URL of your FastAPI endpoint
-url = "http://3.143.204.49:8080/predict"
+url = "http://3.15.147.119:8080/predict"
 
 # Create the JSON payload
 data = [{"AGE": 0,
@@ -231,3 +231,12 @@ response = requests.post(url, json=data)
 # Print the response status code and body
 print("Response Status Code:", response.status_code)
 print("Response Body:", response.json())
+
+
+User Sign-in URL
+https://430118853371.signin.aws.amazon.com/console
+
+# STEPS
+# Create aws account and IAM role
+# Install and configure aws CLI
+# Create Repository on ECR
