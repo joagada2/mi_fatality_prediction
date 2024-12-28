@@ -54,10 +54,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to AWS ECR
-        run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.5.4
         with:
@@ -85,22 +81,35 @@ jobs:
           echo "Updating package database..."
           sudo apt-get update -y
 
-          # Install required utilities (unzip, docker, nginx)
+          # Install required utilities
           echo "Installing required utilities..."
           sudo apt-get install -y unzip docker.io nginx
+
+          # Clean up disk space if low
+          echo "Cleaning up disk space..."
+          docker system prune -af || true
+          sudo apt-get autoremove -y
+          sudo rm -rf /var/log/* || true
 
           # Ensure Docker service is running
           echo "Starting Docker service..."
           sudo systemctl start docker
           sudo systemctl enable docker
 
+          # Add user to Docker group
+          echo "Adding current user to Docker group..."
+          sudo usermod -aG docker $USER
+
+          # Apply group permissions and execute Docker commands
+          newgrp docker << INNER_EOF
+
           # Install AWS CLI if not installed
           if ! command -v aws &> /dev/null; then
-            echo "Installing AWS CLI..."
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-            rm -rf awscliv2.zip aws
+              echo "Installing AWS CLI..."
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              sudo ./aws/install
+              rm -rf awscliv2.zip aws
           fi
 
           # Configure AWS CLI credentials
@@ -116,7 +125,7 @@ jobs:
           echo "Authenticating with AWS ECR..."
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-          # Pull Docker image from ECR
+          # Pull Docker image
           echo "Pulling Docker image..."
           docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
 
@@ -124,17 +133,13 @@ jobs:
           echo "Stopping and removing any running container..."
           RUNNING_CONTAINER=\$(docker ps -q)
           if [ -n "\$RUNNING_CONTAINER" ]; then
-            docker stop \$RUNNING_CONTAINER
-            docker rm \$RUNNING_CONTAINER
+              docker stop \$RUNNING_CONTAINER
+              docker rm \$RUNNING_CONTAINER
           fi
 
-          # Run the Docker container
-          echo "Running the Docker container..."
-          docker run -d -p 8000:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
-
-          # Set up Nginx
-          echo "Setting up Nginx..."
-          cat << NGINX_CONF > /etc/nginx/sites-available/fastapi
+          # Configure Nginx
+          echo "Configuring Nginx..."
+          sudo tee /etc/nginx/sites-available/fastapi << NGINX_CONF
           server {
               listen 80;
               server_name localhost;
@@ -150,9 +155,14 @@ jobs:
           NGINX_CONF
 
           sudo ln -sf /etc/nginx/sites-available/fastapi /etc/nginx/sites-enabled/fastapi
-
-          echo "Restarting Nginx..."
+          sudo nginx -t
           sudo systemctl restart nginx
+
+          # Run the Docker container
+          echo "Running the Docker container..."
+          docker run -d -p 8000:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
+
+          INNER_EOF
 
           echo "Deployment completed successfully!"
           EOF
