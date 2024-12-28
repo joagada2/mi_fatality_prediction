@@ -1,5 +1,3 @@
-name: CI/CD Pipeline
-
 on:
   push:
     branches:
@@ -28,8 +26,6 @@ jobs:
 
       - name: Login to AWS ECR
         uses: aws-actions/amazon-ecr-login@v1
-        with:
-          region: ${{ secrets.AWS_REGION }}
 
       - name: Build Docker image
         run: |
@@ -96,9 +92,10 @@ jobs:
           sudo systemctl start docker
           sudo systemctl enable docker
 
-          # Add user to Docker group
-          echo "Adding current user to Docker group..."
-          sudo usermod -aG docker $USER
+          # Add current user to Docker group
+          CURRENT_USER=\$(whoami)  # Dynamically fetch the current user
+          echo "Adding current user (\$CURRENT_USER) to Docker group..."
+          sudo usermod -aG docker \$CURRENT_USER
 
           # Apply group permissions and execute Docker commands
           newgrp docker << INNER_EOF
@@ -112,24 +109,14 @@ jobs:
               rm -rf awscliv2.zip aws
           fi
 
-          # Configure AWS CLI credentials
-          echo "Configuring AWS CLI credentials..."
-          mkdir -p ~/.aws
-          echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
-          echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
-          echo "[default]" > ~/.aws/config
-          echo "region=$AWS_REGION" >> ~/.aws/config
-
-          # Authenticate with AWS ECR
+          # Authenticate with AWS ECR and pull the Docker image
           echo "Authenticating with AWS ECR..."
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-          # Pull Docker image
           echo "Pulling Docker image..."
           docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
 
-          # Stop and remove any existing container
+          # Stop and remove existing containers
           echo "Stopping and removing any running container..."
           RUNNING_CONTAINER=\$(docker ps -q)
           if [ -n "\$RUNNING_CONTAINER" ]; then
@@ -137,7 +124,7 @@ jobs:
               docker rm \$RUNNING_CONTAINER
           fi
 
-          # Configure Nginx
+          # Configure and restart Nginx
           echo "Configuring Nginx..."
           sudo tee /etc/nginx/sites-available/fastapi << NGINX_CONF
           server {
