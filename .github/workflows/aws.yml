@@ -15,18 +15,35 @@ jobs:
 
     - name: Set Up Environment
       run: |
-        sudo apt update
-        sudo apt install -y unzip nginx docker.io
-        echo "Ensuring Docker and Nginx services are running..."
+        echo "Updating APT and fixing dependencies..."
+        sudo apt update -y
+        sudo apt upgrade -y
+        sudo apt --fix-broken install -y
+        sudo apt autoremove -y
+
+        echo "Removing conflicting container runtime if present..."
+        sudo apt remove -y containerd containerd.io || echo "No conflicting package found."
+
+        echo "Installing Docker..."
+        curl -fsSL https://get.docker.com -o get-docker.sh
+        sudo sh get-docker.sh
+
+        echo "Ensuring Docker is running..."
         sudo systemctl start docker
         sudo systemctl enable docker
-        sudo systemctl start nginx
-        sudo systemctl enable nginx
 
-    - name: Add User to Docker Group
+    - name: Add Current User to Docker Group
       run: |
         echo "Adding current user to Docker group..."
         sudo usermod -aG docker $USER
+
+    - name: Install Nginx
+      run: |
+        echo "Installing Nginx..."
+        sudo apt install -y nginx
+        echo "Ensuring Nginx is running..."
+        sudo systemctl start nginx
+        sudo systemctl enable nginx
 
     - name: Install AWS CLI
       run: |
