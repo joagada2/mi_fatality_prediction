@@ -59,7 +59,7 @@ jobs:
         run: |
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy Docker container to EC2
+      - name: Deploy to EC2
         env:
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -73,83 +73,59 @@ jobs:
 
           echo "Starting deployment to EC2 instance at \$(date)..."
 
-          # Update package database
-          echo "Updating package database..."
+          # Install necessary tools
+          echo "Installing prerequisites..."
           sudo apt-get update -y
+          sudo apt-get install -y docker.io nginx unzip
 
-          # Install required utilities
-          echo "Installing required utilities..."
-          sudo apt-get install -y unzip docker.io nginx
+          # Add user to Docker group
+          sudo usermod -aG docker \$USER
 
-          # Clean up disk space if low
-          echo "Cleaning up disk space..."
-          docker system prune -af || true
-          sudo apt-get autoremove -y
-          sudo rm -rf /var/log/* || true
-
-          # Ensure Docker service is running
-          echo "Starting Docker service..."
+          # Start services
+          echo "Ensuring Docker and Nginx services are running..."
           sudo systemctl start docker
           sudo systemctl enable docker
+          sudo systemctl start nginx
+          sudo systemctl enable nginx
 
-          # Add current user to Docker group
-          CURRENT_USER=\$(whoami)  # Dynamically fetch the current user
-          echo "Adding current user (\$CURRENT_USER) to Docker group..."
-          sudo usermod -aG docker \$CURRENT_USER
-
-          # Apply group permissions and execute Docker commands
-          newgrp docker << INNER_EOF
-
-          # Install AWS CLI if not installed
+          # Configure AWS CLI
           if ! command -v aws &> /dev/null; then
-              echo "Installing AWS CLI..."
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              unzip awscliv2.zip
-              sudo ./aws/install
-              rm -rf awscliv2.zip aws
+            echo "Installing AWS CLI..."
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
           fi
 
-          # Authenticate with AWS ECR and pull the Docker image
+          # Authenticate Docker with AWS ECR
           echo "Authenticating with AWS ECR..."
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-          echo "Pulling Docker image..."
+          # Pull and run the Docker image
+          echo "Pulling and running Docker image..."
           docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
+          docker stop \$(docker ps -q) || true
+          docker rm \$(docker ps -aq) || true
+          docker run -d -p 8000:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
 
-          # Stop and remove existing containers
-          echo "Stopping and removing any running container..."
-          RUNNING_CONTAINER=\$(docker ps -q)
-          if [ -n "\$RUNNING_CONTAINER" ]; then
-              docker stop \$RUNNING_CONTAINER
-              docker rm \$RUNNING_CONTAINER
-          fi
-
-          # Configure and restart Nginx
+          # Set up Nginx
           echo "Configuring Nginx..."
-          sudo tee /etc/nginx/sites-available/fastapi << NGINX_CONF
+          sudo bash -c 'cat > /etc/nginx/sites-available/fastapi' << 'EOL'
           server {
               listen 80;
               server_name localhost;
 
               location / {
-                  proxy_pass http://127.0.0.1:8000;
+                  proxy_pass http://127.0.0.1:80;
                   proxy_set_header Host \$host;
                   proxy_set_header X-Real-IP \$remote_addr;
                   proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
                   proxy_set_header X-Forwarded-Proto \$scheme;
               }
           }
-          NGINX_CONF
-
-          sudo ln -sf /etc/nginx/sites-available/fastapi /etc/nginx/sites-enabled/fastapi
+          EOL
+          sudo ln -sf /etc/nginx/sites-available/fastapi /etc/nginx/sites-enabled/
           sudo nginx -t
           sudo systemctl restart nginx
-
-          # Run the Docker container
-          echo "Running the Docker container..."
-          docker run -d -p 8000:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/mi_fatality_prediction:latest
-
-          INNER_EOF
 
           echo "Deployment completed successfully!"
           EOF
