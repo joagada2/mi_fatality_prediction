@@ -18,19 +18,21 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Fix and Install Dependencies
+    - name: Fix Package Conflicts
       run: |
         echo "Resolving package conflicts..."
         sudo apt-get update
-        # Identify and remove conflicting container runtimes
-        sudo apt-get purge -y containerd containerd.io || true
-        sudo apt-get autoremove -y
-        
-        # Clear held packages
-        sudo apt-get install -f || true
+        # Remove conflicting packages
+        sudo apt-get remove -y moby-containerd containerd containerd.io || true
+        # Clear broken/held packages
+        sudo apt-get install -f -y || true
         sudo dpkg --configure -a || true
+        sudo apt-get autoremove -y
 
-        # Install containerd.io and other dependencies
+    - name: Install Dependencies
+      run: |
+        echo "Installing Docker and other dependencies..."
+        sudo apt-get update
         sudo apt-get install -y docker.io containerd.io nginx unzip awscli
 
     - name: Configure Nginx
