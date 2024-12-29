@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with Caddy
+name: CI/CD Pipeline
 
 on:
   push:
@@ -11,44 +11,42 @@ jobs:
 
     steps:
       # Step 1: Checkout the repository
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up AWS CLI and Authenticate with ECR
-      - name: Configure AWS CLI
-        run: |
-          echo "Setting up AWS CLI..."
-          mkdir -p ~/.aws
-          echo "[default]" > ~/.aws/config
-          echo "region = us-east-2" >> ~/.aws/config
-          echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
-          echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+      # Step 2: Set up Docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
 
-      - name: Authenticate with AWS ECR
-        run: |
-          echo "Authenticating with AWS ECR..."
-          aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 430118853371.dkr.ecr.us-east-2.amazonaws.com
+      # Step 3: Log in to AWS ECR
+      - name: Log in to AWS ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 3: Build and Push Docker Image
-      - name: Build and Push Docker Image
+      # Step 4: Build and push Docker image
+      - name: Build and push Docker image
+        env:
+          ECR_URL: 430118853371.dkr.ecr.us-east-2.amazonaws.com
+          IMAGE_NAME: mi_fatality_prediction
         run: |
-          echo "Building Docker image..."
-          docker build -t mi_fatality_prediction .
-          docker tag mi_fatality_prediction:latest 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
-          docker push 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
+          docker build -t $ECR_URL/$IMAGE_NAME:latest .
+          docker push $ECR_URL/$IMAGE_NAME:latest
 
-      # Step 4: Deploy to EC2 Instance
+      # Step 5: Deploy to EC2 Instance
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ secrets.EC2_PUBLIC_IP }}
+          host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "Updating EC2 instance..."
             sudo apt update && sudo apt upgrade -y
-            
+
+            echo "Installing Docker..."
+            sudo apt-get remove docker docker-engine docker.io containerd runc || true
+            sudo apt install -y docker.io
+
             echo "Installing Caddy..."
             sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
             curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /usr/share/keyrings/caddy-archive-keyring.asc
@@ -59,25 +57,24 @@ jobs:
             echo "Stopping old containers..."
             docker container stop $(docker container ls -aq) || true
             docker container rm $(docker container ls -aq) || true
-            
+
             echo "Pulling new Docker image..."
-            docker pull 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
-            
+            docker pull $ECR_URL/$IMAGE_NAME:latest
+
             echo "Starting Docker container..."
-            docker run -d --name mi_fatality_prediction -p 8080:8080 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
-            
+            docker run -d --name $IMAGE_NAME -p 8080:8080 $ECR_URL/$IMAGE_NAME:latest
+
             echo "Configuring Caddy..."
             echo ':80 {
                 reverse_proxy 127.0.0.1:8080
             }' | sudo tee /etc/caddy/Caddyfile
-            
+
             echo "Restarting Caddy..."
             sudo systemctl restart caddy
-            
+
             echo "Deployment completed!"
 
-      # Step 5: Verify Deployment
-      - name: Verify Deployment
+      # Step 6: Verify the deployment
+      - name: Verify deployment
         run: |
-          echo "Verifying application deployment..."
-          curl http://$${{ secrets.EC2_PUBLIC_IP }}/health || exit 1
+          curl -v http://${{ secrets.EC2_HOST }}
