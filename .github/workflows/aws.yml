@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with Dependency Management
+name: CI/CD Pipeline with AWS Credentials
 
 on:
   push:
@@ -9,72 +9,36 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_DEFAULT_REGION: us-east-2
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
     - name: Set Up Environment
       run: |
-        echo "Updating system and resolving package conflicts..."
-        sudo apt-get update
+        echo "Updating system packages..."
+        sudo apt-get update -y
+        sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 
-        # Remove conflicting package
-        if dpkg -l | grep -q containerd; then
-          echo "Removing conflicting package containerd..."
-          sudo apt-get remove -y containerd || true
-        fi
-
-        # Clean up and ensure no broken packages remain
-        sudo apt-get clean
-        sudo apt-get autoremove -y
-
-        # Install Docker dependencies
-        echo "Installing Docker..."
-        sudo apt-get install -y \
-          apt-transport-https \
-          ca-certificates \
-          curl \
-          software-properties-common
-        
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io || exit 1
-
-    - name: Ensure Sufficient Disk Space
-      run: |
-        echo "Checking disk space..."
-        df -h
-        echo "Cleaning up if space is insufficient..."
-        docker system prune -af || true
-        df -h
-
-    - name: Ensure Docker and Nginx Are Running
-      run: |
-        echo "Starting Docker and Nginx services..."
-        sudo systemctl restart docker || exit 1
-        sudo systemctl restart nginx || exit 1
-
-    - name: Validate AWS CLI and IAM Role
-      env:
-        AWS_DEFAULT_REGION: us-east-2
+    - name: Validate AWS CLI
       run: |
         echo "Testing AWS CLI configuration..."
-        aws sts get-caller-identity || exit 1
+        aws sts get-caller-identity || (echo "AWS credentials not configured properly!" && exit 1)
 
     - name: Authenticate with AWS ECR
-      env:
-        AWS_DEFAULT_REGION: us-east-2
       run: |
         echo "Authenticating with AWS ECR..."
-        ECR_URL="<your-ecr-url>" # Replace this with your ECR URL
+        ECR_URL="<your-ecr-url>" # Replace with actual ECR URL
         aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL || exit 1
 
-    - name: Pull Docker Image from ECR
+    - name: Pull Docker Image
       run: |
         echo "Pulling Docker image from ECR..."
-        docker pull <your-ecr-url>/mi_fatality_prediction:latest || exit 1
+        docker pull 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest || exit 1
 
     - name: Run Docker Container
       run: |
