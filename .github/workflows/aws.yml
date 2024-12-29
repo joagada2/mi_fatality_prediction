@@ -59,7 +59,11 @@ jobs:
         AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
       run: |
         echo "Authenticating with AWS ECR..."
-        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+        if [ -z "${AWS_DEFAULT_REGION}" ]; then
+          echo "AWS_DEFAULT_REGION is not set. Exiting."
+          exit 1
+        fi
+        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
 
     - name: Pull Docker Image
       run: |
