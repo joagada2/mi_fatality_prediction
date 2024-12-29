@@ -22,7 +22,6 @@ jobs:
       run: |
         echo "Resolving package conflicts..."
         sudo apt-get update
-        # Remove conflicting packages and clean the environment
         sudo apt-get remove -y moby-containerd containerd || true
         sudo apt-get autoremove -y || true
         sudo dpkg --configure -a || true
@@ -31,7 +30,6 @@ jobs:
     - name: Install Docker
       run: |
         echo "Installing Docker and containerd..."
-        # Install Docker from Docker's official repository
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get update
@@ -63,9 +61,13 @@ jobs:
         sudo systemctl restart nginx
 
     - name: Authenticate AWS ECR
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_DEFAULT_REGION: "us-east-2"
       run: |
         echo "Authenticating with AWS ECR..."
-        aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 430118853371.dkr.ecr.us-east-2.amazonaws.com
+        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 430118853371.dkr.ecr.us-east-2.amazonaws.com
 
     - name: Pull and Run Docker Container
       run: |
