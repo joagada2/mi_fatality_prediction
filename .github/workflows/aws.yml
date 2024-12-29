@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with Enhanced Debugging
+name: CI/CD Pipeline with Dependency Management
 
 on:
   push:
@@ -15,9 +15,32 @@ jobs:
 
     - name: Set Up Environment
       run: |
-        echo "Updating system and installing required packages..."
+        echo "Updating system and resolving package conflicts..."
         sudo apt-get update
-        sudo apt-get install -y docker.io nginx awscli unzip || exit 1
+
+        # Remove conflicting package
+        if dpkg -l | grep -q containerd; then
+          echo "Removing conflicting package containerd..."
+          sudo apt-get remove -y containerd || true
+        fi
+
+        # Clean up and ensure no broken packages remain
+        sudo apt-get clean
+        sudo apt-get autoremove -y
+
+        # Install Docker dependencies
+        echo "Installing Docker..."
+        sudo apt-get install -y \
+          apt-transport-https \
+          ca-certificates \
+          curl \
+          software-properties-common
+        
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+        sudo apt-get update
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io || exit 1
 
     - name: Ensure Sufficient Disk Space
       run: |
