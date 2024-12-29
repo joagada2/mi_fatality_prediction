@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with AWS Credentials
+name: Deploy Application to EC2
 
 on:
   push:
@@ -9,66 +9,66 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      AWS_DEFAULT_REGION: us-east-2
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
     steps:
-    - name: Checkout Repository
+    - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Set Up Environment
+    - name: Set up AWS CLI
       run: |
-        echo "Updating system packages..."
-        sudo apt-get update -y
-        sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-
-    - name: Validate AWS CLI
-      run: |
-        echo "Testing AWS CLI configuration..."
-        aws sts get-caller-identity || (echo "AWS credentials not configured properly!" && exit 1)
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip -q awscliv2.zip
+        sudo ./aws/install --update
+        aws --version
 
     - name: Authenticate with AWS ECR
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: |
         echo "Authenticating with AWS ECR..."
-        ECR_URL="430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction" # Replace with actual ECR URL
-        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL || exit 1
+        aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 430118853371.dkr.ecr.us-east-2.amazonaws.com
 
     - name: Pull Docker Image
       run: |
-        echo "Pulling Docker image from ECR..."
-        docker pull 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest || exit 1
+        echo "Pulling Docker image..."
+        docker pull 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
+
+    - name: Stop and Remove Existing Containers
+      run: |
+        echo "Stopping and removing existing containers..."
+        docker ps -q --filter "ancestor=430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest" | xargs -r docker stop
+        docker ps -aq --filter "ancestor=430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest" | xargs -r docker rm
 
     - name: Run Docker Container
       run: |
-        echo "Running the Docker container..."
-        docker stop mi_fatality_prediction || true
-        docker rm mi_fatality_prediction || true
-        docker run -d --name mi_fatality_prediction -p 8080:8080 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest || exit 1
+        echo "Running new Docker container..."
+        docker run -d --name mi_fatality_prediction -p 8080:8080 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
 
-    - name: Configure Nginx
+    - name: Configure and Restart Nginx
       run: |
         echo "Configuring Nginx..."
-        cat <<EOF | sudo tee /etc/nginx/sites-available/fastapi
-        server {
+        sudo apt-get update
+        sudo apt-get install -y nginx
+
+        # Create Nginx configuration
+        echo "server {
             listen 80;
-            server_name localhost;
+            server_name 3.17.13.87;
 
             location / {
                 proxy_pass http://127.0.0.1:8080;
-                proxy_set_header Host \$host;
-                proxy_set_header X-Real-IP \$remote_addr;
-                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$scheme;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
             }
-        }
-        EOF
-        sudo ln -sf /etc/nginx/sites-available/fastapi /etc/nginx/sites-enabled/
-        sudo nginx -t || exit 1
-        sudo systemctl restart nginx || exit 1
+        }" | sudo tee /etc/nginx/sites-available/default
 
-    - name: Test Deployment
+        # Test and restart Nginx
+        sudo nginx -t
+        sudo systemctl restart nginx
+
+    - name: Verify Deployment
       run: |
-        echo "Testing deployment..."
-        curl -v http://localhost || exit 1
+        echo "Verifying deployment..."
+        curl -I http://3.17.13.87
