@@ -32,7 +32,7 @@ jobs:
     - name: Authenticate with AWS ECR
       run: |
         echo "Authenticating with AWS ECR..."
-        ECR_URL="<your-ecr-url>" # Replace with actual ECR URL
+        ECR_URL="430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction" # Replace with actual ECR URL
         aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL || exit 1
 
     - name: Pull Docker Image
@@ -45,7 +45,7 @@ jobs:
         echo "Running the Docker container..."
         docker stop mi_fatality_prediction || true
         docker rm mi_fatality_prediction || true
-        docker run -d --name mi_fatality_prediction -p 8080:8080 <your-ecr-url>/mi_fatality_prediction:latest || exit 1
+        docker run -d --name mi_fatality_prediction -p 8080:8080 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest || exit 1
 
     - name: Configure Nginx
       run: |
