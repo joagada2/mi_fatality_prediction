@@ -13,62 +13,50 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Set up AWS CLI
-      run: |
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip -q awscliv2.zip
-        sudo ./aws/install --update
-        aws --version
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Authenticate with AWS ECR
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Install Dependencies
       run: |
-        echo "Authenticating with AWS ECR..."
-        aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 430118853371.dkr.ecr.us-east-2.amazonaws.com
-
-    - name: Pull Docker Image
-      run: |
-        echo "Pulling Docker image..."
-        docker pull 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
-
-    - name: Stop and Remove Existing Containers
-      run: |
-        echo "Stopping and removing existing containers..."
-        docker ps -q --filter "ancestor=430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest" | xargs -r docker stop
-        docker ps -aq --filter "ancestor=430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest" | xargs -r docker rm
-
-    - name: Run Docker Container
-      run: |
-        echo "Running new Docker container..."
-        docker run -d --name mi_fatality_prediction -p 8080:8080 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
-
-    - name: Configure and Restart Nginx
-      run: |
-        echo "Configuring Nginx..."
         sudo apt-get update
-        sudo apt-get install -y nginx
+        sudo apt-get install -y nginx unzip awscli docker.io
 
-        # Create Nginx configuration
-        echo "server {
+    - name: Configure Nginx
+      run: |
+        echo "Updating Nginx configuration..."
+        cat <<EOL | sudo tee /etc/nginx/sites-available/default
+        server {
             listen 80;
             server_name 3.17.13.87;
 
             location / {
                 proxy_pass http://127.0.0.1:8080;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
             }
-        }" | sudo tee /etc/nginx/sites-available/default
-
-        # Test and restart Nginx
+        }
+        EOL
         sudo nginx -t
         sudo systemctl restart nginx
 
-    - name: Verify Deployment
+    - name: Authenticate AWS ECR
       run: |
-        echo "Verifying deployment..."
-        curl -I http://3.17.13.87
+        echo "Authenticating with AWS ECR..."
+        aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction
+
+    - name: Pull and Run Docker Container
+      run: |
+        echo "Pulling and running Docker container..."
+        docker pull 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
+        docker stop my_container || true
+        docker rm my_container || true
+        docker run -d --name my_container -p 8080:8080 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
+
+    - name: Verify Application
+      run: |
+        echo "Verifying application..."
+        curl http://3.17.13.87:80 || exit 1
