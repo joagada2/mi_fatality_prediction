@@ -1,4 +1,4 @@
-name: Deploy Application to EC2
+name: CI/CD Pipeline with Caddy
 
 on:
   push:
@@ -6,78 +6,78 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      # Step 1: Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Set up SSH
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      # Step 2: Set up AWS CLI and Authenticate with ECR
+      - name: Configure AWS CLI
+        run: |
+          echo "Setting up AWS CLI..."
+          mkdir -p ~/.aws
+          echo "[default]" > ~/.aws/config
+          echo "region = us-east-2" >> ~/.aws/config
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+          echo "aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
 
-    - name: Fix Package Conflicts
-      run: |
-        echo "Resolving package conflicts..."
-        sudo apt-get update
-        sudo apt-get remove -y moby-containerd containerd || true
-        sudo apt-get autoremove -y || true
-        sudo dpkg --configure -a || true
-        sudo apt-get install -f -y || true
+      - name: Authenticate with AWS ECR
+        run: |
+          echo "Authenticating with AWS ECR..."
+          aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 430118853371.dkr.ecr.us-east-2.amazonaws.com
 
-    - name: Install Docker
-      run: |
-        echo "Installing Docker and containerd..."
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+      # Step 3: Build and Push Docker Image
+      - name: Build and Push Docker Image
+        run: |
+          echo "Building Docker image..."
+          docker build -t mi_fatality_prediction .
+          docker tag mi_fatality_prediction:latest 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
+          docker push 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
 
-    - name: Install Additional Dependencies
-      run: |
-        echo "Installing Nginx, unzip, and AWS CLI..."
-        sudo apt-get install -y nginx unzip awscli
+      # Step 4: Deploy to EC2 Instance
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Updating EC2 instance..."
+            sudo apt update && sudo apt upgrade -y
+            
+            echo "Installing Caddy..."
+            sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+            curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /usr/share/keyrings/caddy-archive-keyring.asc
+            curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/deb.debian.default.track' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+            sudo apt update
+            sudo apt install caddy -y
 
-    - name: Configure Nginx
-      run: |
-        echo "Configuring Nginx..."
-        cat <<EOL | sudo tee /etc/nginx/sites-available/default
-        server {
-            listen 80;
-            server_name 3.17.13.87;
+            echo "Stopping old containers..."
+            docker container stop $(docker container ls -aq) || true
+            docker container rm $(docker container ls -aq) || true
+            
+            echo "Pulling new Docker image..."
+            docker pull 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
+            
+            echo "Starting Docker container..."
+            docker run -d --name mi_fatality_prediction -p 8080:8080 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
+            
+            echo "Configuring Caddy..."
+            echo ':80 {
+                reverse_proxy 127.0.0.1:8080
+            }' | sudo tee /etc/caddy/Caddyfile
+            
+            echo "Restarting Caddy..."
+            sudo systemctl restart caddy
+            
+            echo "Deployment completed!"
 
-            location / {
-                proxy_pass http://127.0.0.1:8080;
-                proxy_set_header Host \$host;
-                proxy_set_header X-Real-IP \$remote_addr;
-                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto \$scheme;
-            }
-        }
-        EOL
-        sudo nginx -t
-        sudo systemctl restart nginx
-
-    - name: Authenticate AWS ECR
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: "us-east-2"
-      run: |
-        echo "Authenticating with AWS ECR..."
-        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 430118853371.dkr.ecr.us-east-2.amazonaws.com
-
-    - name: Pull and Run Docker Container
-      run: |
-        echo "Pulling and running Docker container..."
-        docker pull 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
-        docker stop my_container || true
-        docker rm my_container || true
-        docker run -d --name my_container -p 8080:8080 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction:latest
-
-    - name: Verify Deployment
-      run: |
-        echo "Verifying application deployment..."
-        curl -v http://3.17.13.87 || exit 1
+      # Step 5: Verify Deployment
+      - name: Verify Deployment
+        run: |
+          echo "Verifying application deployment..."
+          curl http://$${{ secrets.EC2_PUBLIC_IP }}/health || exit 1
