@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline with Enhanced Debugging
 
 on:
   push:
@@ -10,70 +10,60 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
+    - name: Checkout Repository
       uses: actions/checkout@v3
 
     - name: Set Up Environment
       run: |
-        echo "Updating APT and fixing dependencies..."
-        sudo apt update -y
-        sudo apt upgrade -y
-        sudo apt --fix-broken install -y
-        sudo apt autoremove -y
+        echo "Updating system and installing required packages..."
+        sudo apt-get update
+        sudo apt-get install -y docker.io nginx awscli unzip || exit 1
 
-        echo "Removing conflicting container runtime if present..."
-        sudo apt remove -y containerd containerd.io || echo "No conflicting package found."
-
-        echo "Installing Docker..."
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh
-
-        echo "Ensuring Docker is running..."
-        sudo systemctl start docker
-        sudo systemctl enable docker
-
-    - name: Add Current User to Docker Group
+    - name: Ensure Sufficient Disk Space
       run: |
-        echo "Adding current user to Docker group..."
-        sudo usermod -aG docker $USER
+        echo "Checking disk space..."
+        df -h
+        echo "Cleaning up if space is insufficient..."
+        docker system prune -af || true
+        df -h
 
-    - name: Install Nginx
+    - name: Ensure Docker and Nginx Are Running
       run: |
-        echo "Installing Nginx..."
-        sudo apt install -y nginx
-        echo "Ensuring Nginx is running..."
-        sudo systemctl start nginx
-        sudo systemctl enable nginx
+        echo "Starting Docker and Nginx services..."
+        sudo systemctl restart docker || exit 1
+        sudo systemctl restart nginx || exit 1
 
-    - name: Install AWS CLI
-      run: |
-        echo "Installing or updating AWS CLI..."
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-        unzip awscliv2.zip
-        sudo ./aws/install --update
-
-    - name: Authenticate AWS ECR
+    - name: Validate AWS CLI and IAM Role
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_DEFAULT_REGION: us-east-2
+      run: |
+        echo "Testing AWS CLI configuration..."
+        aws sts get-caller-identity || exit 1
+
+    - name: Authenticate with AWS ECR
+      env:
+        AWS_DEFAULT_REGION: us-east-2
       run: |
         echo "Authenticating with AWS ECR..."
-        if [ -z "${AWS_DEFAULT_REGION}" ]; then
-          echo "AWS_DEFAULT_REGION is not set. Please set it in the repository secrets."
-          exit 1
-        fi
-        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+        ECR_URL="<your-ecr-url>" # Replace this with your ECR URL
+        aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URL || exit 1
 
-    - name: Pull Docker Image
+    - name: Pull Docker Image from ECR
       run: |
-        echo "Pulling Docker image..."
-        docker pull ${{ secrets.ECR_REPOSITORY }}:latest
+        echo "Pulling Docker image from ECR..."
+        docker pull <your-ecr-url>/mi_fatality_prediction:latest || exit 1
 
-    - name: Configure and Restart Nginx
+    - name: Run Docker Container
+      run: |
+        echo "Running the Docker container..."
+        docker stop mi_fatality_prediction || true
+        docker rm mi_fatality_prediction || true
+        docker run -d --name mi_fatality_prediction -p 8080:8080 <your-ecr-url>/mi_fatality_prediction:latest || exit 1
+
+    - name: Configure Nginx
       run: |
         echo "Configuring Nginx..."
-        sudo bash -c 'cat > /etc/nginx/sites-available/fastapi' << 'EOL'
+        cat <<EOF | sudo tee /etc/nginx/sites-available/fastapi
         server {
             listen 80;
             server_name localhost;
@@ -86,31 +76,12 @@ jobs:
                 proxy_set_header X-Forwarded-Proto \$scheme;
             }
         }
-        EOL
+        EOF
         sudo ln -sf /etc/nginx/sites-available/fastapi /etc/nginx/sites-enabled/
+        sudo nginx -t || exit 1
+        sudo systemctl restart nginx || exit 1
 
-        echo "Ensuring Nginx log directory exists..."
-        sudo mkdir -p /var/log/nginx
-        sudo chown -R www-data:www-data /var/log/nginx
-
-        echo "Validating Nginx configuration..."
-        sudo nginx -t || { echo "Nginx configuration is invalid!"; exit 1; }
-
-        echo "Restarting Nginx..."
-        sudo systemctl restart nginx || { echo "Failed to restart Nginx! Check logs."; sudo journalctl -xeu nginx; exit 1; }
-
-    - name: Run Docker Container
+    - name: Test Deployment
       run: |
-        echo "Running Docker container..."
-        docker run -d -p 8080:8080 --name fastapi_container ${{ secrets.ECR_REPOSITORY }}:latest
-
-    - name: Health Check
-      run: |
-        echo "Performing health check..."
-        curl -f http://localhost || { echo "Health check failed!"; exit 1; }
-
-    - name: Cleanup
-      run: |
-        echo "Cleaning up disk space..."
-        docker system prune -af
-        sudo apt autoremove -y
+        echo "Testing deployment..."
+        curl -v http://localhost || exit 1
