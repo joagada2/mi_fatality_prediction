@@ -6,41 +6,27 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code
+      # Checkout the repository
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Set up Docker
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
-
       # Authenticate to AWS ECR
       - name: Authenticate to Amazon ECR
-        id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
-      # Build and Push Docker Image to AWS ECR
-      - name: Build and Push Docker Image
-        env:
-          ECR_URL: ${{ secrets.ECR_URL }}
-        run: |
-          docker build -t my-app .
-          docker tag my-app:latest $ECR_URL:latest
-          docker push $ECR_URL:latest
-
-      # SSH into the server and deploy the container
+      # Deploy via SSH
       - name: Deploy Application via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
@@ -55,10 +41,8 @@ jobs:
 
             echo "Running new container..."
             docker run -d -p 80:80 --name my-app ${{ secrets.ECR_URL }}:latest
-        env:
-          ECR_URL: ${{ secrets.ECR_URL }}
 
-      # Debugging SSH Connection
+      # Test SSH Connectivity (Optional Debugging)
       - name: Test SSH Connection
         run: |
           ssh -i ${{ secrets.SSH_PRIVATE_KEY }} -o StrictHostKeyChecking=no ${{ secrets.USER }}@${{ secrets.EC2_HOST }} "echo SSH connection successful"
