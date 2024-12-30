@@ -130,8 +130,9 @@ jobs:
             # Check and log container status
             echo "Checking container status..."
             if [ "$(docker inspect -f '{{.State.Running}}' my-app)" == "false" ]; then
-              echo "Container my-app is not running, checking logs..."
+              echo "Container my-app is not running, checking logs and details..."
               docker logs my-app
+              docker inspect my-app
               exit 1
             fi
 
