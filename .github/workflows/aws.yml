@@ -71,14 +71,6 @@ jobs:
             echo "Pulling Docker image from ECR..."
             docker pull ${{ secrets.ECR_URL }}:latest
 
-            # Identify and stop process using port 8000
-            echo "Checking for processes using port 8000..."
-            PIDS=$(sudo lsof -t -i :8000 || true)
-            if [ -n "$PIDS" ]; then
-              echo "Stopping processes using port 8000: $PIDS"
-              sudo kill -9 $PIDS
-            fi
-
             # Stop and remove any existing Docker container
             echo "Stopping and removing old containers..."
             docker stop my-app || true
@@ -88,13 +80,17 @@ jobs:
             echo "Ensuring port 8000 is free..."
             PIDS=$(sudo lsof -t -i :8000 || true)
             if [ -n "$PIDS" ]; then
-              echo "Port 8000 is still in use by processes: $PIDS, stopping them..."
+              echo "Stopping processes using port 8000: $PIDS"
               sudo kill -9 $PIDS
             fi
 
             # Clean up any dangling Docker containers
             echo "Cleaning up dangling Docker containers..."
             docker container prune -f
+
+            # Clean up any dangling Docker networks
+            echo "Cleaning up dangling Docker networks..."
+            docker network prune -f
 
             # Run the Docker container
             echo "Running new container..."
