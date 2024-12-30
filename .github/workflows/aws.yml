@@ -1,154 +1,27 @@
-name: CI/CD Pipeline
+import pandas as pd
+import os
 
-on:
-  push:
-    branches:
-      - main
+# Define the path to the folder
+folder_path = 'new data'
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# Load the parameter_list file to get the column headers
+parameter_list_path = os.path.join(folder_path, 'parameter_list.csv')
+parameter_list = pd.read_csv(parameter_list_path, header=None).iloc[0].tolist()
 
-    steps:
-      # Checkout the repository
-      - name: Checkout Code
-        uses: actions/checkout@v3
+# Initialize an empty list to store the rows
+data_rows = []
 
-      # Authenticate to AWS ECR
-      - name: Authenticate to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+# Loop through the params_1.csv to params_5000.csv files
+for i in range(1, 5001):
+    param_file = os.path.join(folder_path, f'params_{i}.csv')
+    param_data = pd.read_csv(param_file, header=None).iloc[0].tolist()  # Read the single row of each file
+    data_rows.append(param_data)
 
-      # Build and Push Docker Image to ECR
-      - name: Build and Push Docker Image
-        run: |
-          docker build -t ${{ secrets.ECR_URL }}:latest .
-          docker push ${{ secrets.ECR_URL }}:latest
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+# Create the DataFrame with the appropriate columns
+df = pd.DataFrame(data_rows, columns=parameter_list)
 
-      # Deploy via SSH
-      - name: Deploy Application via SSH
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            set -e
+# Optionally, save the DataFrame to a new CSV file
+df.to_csv(os.path.join(folder_path, 'combined_data.csv'), index=False)
 
-            # Install Docker if not installed
-            echo "Checking Docker installation..."
-            if ! command -v docker &> /dev/null; then
-              echo "Installing Docker..."
-              sudo apt-get update
-              sudo apt-get install -y docker.io
-            fi
-
-            # Ensure the user is added to the Docker group
-            echo "Adding user to Docker group..."
-            sudo usermod -aG docker $USER
-
-            # Install unzip if not installed
-            echo "Checking unzip installation..."
-            if ! command -v unzip &> /dev/null; then
-              echo "Installing unzip..."
-              sudo apt-get update
-              sudo apt-get install -y unzip
-            fi
-
-            # Install AWS CLI if not installed
-            echo "Checking AWS CLI installation..."
-            if ! command -v aws &> /dev/null; then
-              echo "Installing AWS CLI..."
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              unzip awscliv2.zip
-              sudo ./aws/install
-            fi
-
-            # Configure AWS credentials
-            echo "Configuring AWS credentials..."
-            aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-            aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            aws configure set default.region ${{ secrets.AWS_REGION }}
-
-            # Authenticate with AWS ECR
-            echo "Authenticating with AWS ECR..."
-            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-
-            # Pull Docker image from ECR
-            echo "Pulling Docker image from ECR..."
-            docker pull ${{ secrets.ECR_URL }}:latest
-
-            # Stop and remove any existing Docker container
-            echo "Stopping and removing old containers..."
-            docker stop my-app || true
-            docker rm my-app || true
-
-            # Ensure port 8000 is free
-            echo "Ensuring port 8000 is free..."
-            PIDS=$(sudo lsof -t -i :8000 || true)
-            if [ -n "$PIDS" ]; then
-              echo "Stopping processes using port 8000: $PIDS"
-              sudo kill -9 $PIDS
-            fi
-
-            # Clean up any dangling Docker containers
-            echo "Cleaning up dangling Docker containers..."
-            docker container prune -f
-
-            # Clean up any dangling Docker networks
-            echo "Cleaning up dangling Docker networks..."
-            docker network prune -f
-
-            # Run the Docker container
-            echo "Running new container..."
-            docker network create my-network || true
-            docker run -d --network my-network -p 8000:8000 --name my-app -e ENV_VAR1=value1 -e ENV_VAR2=value2 ${{ secrets.ECR_URL }}:latest
-
-            # Health check monitoring
-            echo "Monitoring container health..."
-            for i in {1..10}; do
-              STATUS=$(docker inspect -f '{{.State.Health.Status}}' my-app || echo "not-found")
-              if [ "$STATUS" == "healthy" ]; then
-                echo "Container is healthy!"
-                break
-              elif [ "$STATUS" == "not-found" ]; then
-                echo "Container not found. Retrying..."
-              else
-                echo "Waiting for container to become healthy. Current status: $STATUS"
-                sleep 10
-              fi
-            done
-
-            if [ "$STATUS" != "healthy" ]; then
-              echo "Container health check failed after 100 seconds."
-              docker logs my-app
-              exit 1
-            fi
-
-            # Create Caddyfile
-            echo "Creating Caddyfile..."
-            echo ":80 {
-                reverse_proxy localhost:8000
-            }" | sudo tee /etc/caddy/Caddyfile
-
-            # Restart Caddy to apply the new configuration
-            echo "Restarting Caddy..."
-            sudo systemctl restart caddy
-
-      # Test SSH Connectivity (Optional Debugging)
-      - name: Test SSH Connection
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
-          chmod 600 private_key.pem
-          ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo SSH connection successful"
-        env:
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
+# Display the DataFrame
+print(df)
