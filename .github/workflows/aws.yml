@@ -84,6 +84,14 @@ jobs:
             docker stop my-app || true
             docker rm my-app || true
 
+            # Ensure port 8000 is free
+            echo "Ensuring port 8000 is free..."
+            PID=$(sudo lsof -t -i :8000)
+            if [ -n "$PID" ]; then
+              echo "Port 8000 is still in use by process $PID, stopping it..."
+              sudo kill -9 $PID
+            fi
+
             # Run the Docker container
             echo "Running new container..."
             docker run -d -p 8000:8000 --name my-app ${{ secrets.ECR_URL }}:latest
