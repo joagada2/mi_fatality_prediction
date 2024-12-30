@@ -73,10 +73,10 @@ jobs:
 
             # Identify and stop process using port 8000
             echo "Checking for processes using port 8000..."
-            PID=$(sudo ss -tuln | grep ':8000' | awk '{print $6}' | cut -d',' -f2)
-            if [ -n "$PID" ]; then
-              echo "Stopping process $PID using port 8000..."
-              sudo kill -9 $PID
+            PIDS=$(sudo lsof -t -i :8000 || true)
+            if [ -n "$PIDS" ]; then
+              echo "Stopping processes using port 8000: $PIDS"
+              sudo kill -9 $PIDS
             fi
 
             # Stop and remove any existing Docker container
@@ -86,11 +86,15 @@ jobs:
 
             # Ensure port 8000 is free
             echo "Ensuring port 8000 is free..."
-            PID=$(sudo ss -tuln | grep ':8000' | awk '{print $6}' | cut -d',' -f2)
-            if [ -n "$PID" ]; then
-              echo "Port 8000 is still in use by process $PID, stopping it..."
-              sudo kill -9 $PID
+            PIDS=$(sudo lsof -t -i :8000 || true)
+            if [ -n "$PIDS" ]; then
+              echo "Port 8000 is still in use by processes: $PIDS, stopping them..."
+              sudo kill -9 $PIDS
             fi
+
+            # Clean up any dangling Docker containers
+            echo "Cleaning up dangling Docker containers..."
+            docker container prune -f
 
             # Run the Docker container
             echo "Running new container..."
