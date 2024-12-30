@@ -127,6 +127,14 @@ jobs:
             echo "Running new container..."
             docker run -d -p 8000:8000 --name my-app ${{ secrets.ECR_URL }}:latest
 
+            # Check and log container status
+            echo "Checking container status..."
+            if [ "$(docker inspect -f '{{.State.Running}}' my-app)" == "false" ]; then
+              echo "Container my-app is not running, checking logs..."
+              docker logs my-app
+              exit 1
+            fi
+
             # Create Caddyfile
             echo "Creating Caddyfile..."
             echo ":80 {
