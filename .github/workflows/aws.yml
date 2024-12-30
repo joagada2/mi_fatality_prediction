@@ -85,7 +85,7 @@ jobs:
 
             echo "Configuring Caddy to reverse proxy to port 8000..."
             echo ":80 {
-                reverse_proxy 0.0.0.0:8000
+                reverse_proxy localhost:8000
             }" | sudo tee /etc/caddy/Caddyfile
 
             echo "Restarting Caddy to apply the new configuration..."
