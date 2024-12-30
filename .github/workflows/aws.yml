@@ -22,8 +22,10 @@ jobs:
       - name: Authenticate to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
-        with:
-          registry-type: public
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
 
       # Build and Push Docker Image to AWS ECR
       - name: Build and Push Docker Image
