@@ -1,6 +1,4 @@
-# CI/CD pipeline for deploying application with Caddy as reverse proxy
-
-name: Build and Deploy
+name: Deploy Application
 
 on:
   push:
@@ -8,70 +6,40 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
-    env:
-      AWS_REGION: us-east-2
-      ECR_URL: 430118853371.dkr.ecr.us-east-2.amazonaws.com/mi_fatality_prediction
-
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      # Step 2: Authenticate with AWS
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
 
-      # Step 3: Log in to AWS ECR
-      - name: Log in to AWS ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        with:
-          region: ${{ env.AWS_REGION }}
+    - name: Authenticate with AWS ECR
+      run: aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin ${{ secrets.ECR_URL }}
 
-      # Step 4: Build and push Docker image to ECR
-      - name: Build and push Docker image
-        run: |
-          docker build -t $ECR_URL:latest .
-          docker push $ECR_URL:latest
+    - name: Build and Push Docker Image
+      run: |
+        docker build -t my-app .
+        docker tag my-app:latest ${{ secrets.ECR_URL }}:latest
+        docker push ${{ secrets.ECR_URL }}:latest
 
-      # Step 5: Deploy to EC2 instance
-      - name: Deploy application
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # Stop and remove existing container
-            docker ps -q --filter "name=mi_fatality_prediction" | grep -q . && docker stop mi_fatality_prediction && docker rm mi_fatality_prediction
-
-            # Pull the latest image
-            docker pull $ECR_URL:latest
-
-            # Run the container
-            docker run -d --name mi_fatality_prediction \
-              -p 8080:8080 \
-              $ECR_URL:latest
-
-            # Install and configure Caddy as reverse proxy
-            sudo apt update && sudo apt install -y caddy
-            echo "{
-              email youremail@example.com
-            }" | sudo tee /etc/caddy/Caddyfile
-            echo "3.17.13.87 {
-              reverse_proxy localhost:8080
-            }" | sudo tee -a /etc/caddy/Caddyfile
-
-            sudo systemctl restart caddy
-
-      # Step 6: Verify deployment
-      - name: Verify application deployment
-        run: |
-          curl -f http://3.17.13.87 || exit 1
+    - name: SSH into Server and Deploy
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          echo "Pulling Docker image from ECR..."
+          docker pull ${{ secrets.ECR_URL }}:latest
+          echo "Stopping and removing old containers..."
+          docker stop my-app || true
+          docker rm my-app || true
+          echo "Running new container..."
+          docker run -d -p 80:80 --name my-app ${{ secrets.ECR_URL }}:latest
