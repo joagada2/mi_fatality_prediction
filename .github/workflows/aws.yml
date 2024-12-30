@@ -1,27 +1,92 @@
-import pandas as pd
-import os
+name: CI/CD Pipeline
 
-# Define the path to the folder
-folder_path = 'new data'
+on:
+  push:
+    branches:
+      - main
 
-# Load the parameter_list file to get the column headers
-parameter_list_path = os.path.join(folder_path, 'parameter_list.csv')
-parameter_list = pd.read_csv(parameter_list_path, header=None).iloc[0].tolist()
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-# Initialize an empty list to store the rows
-data_rows = []
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-# Loop through the params_1.csv to params_5000.csv files
-for i in range(1, 5001):
-    param_file = os.path.join(folder_path, f'params_{i}.csv')
-    param_data = pd.read_csv(param_file, header=None).iloc[0].tolist()  # Read the single row of each file
-    data_rows.append(param_data)
+      - name: Authenticate to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
 
-# Create the DataFrame with the appropriate columns
-df = pd.DataFrame(data_rows, columns=parameter_list)
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ secrets.ECR_URL }}:latest .
+          docker push ${{ secrets.ECR_URL }}:latest
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
 
-# Optionally, save the DataFrame to a new CSV file
-df.to_csv(os.path.join(folder_path, 'combined_data.csv'), index=False)
+      - name: Deploy Application via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -e
+            echo "Installing dependencies..."
+            sudo apt-get update
+            sudo apt-get install -y docker.io curl
 
-# Display the DataFrame
-print(df)
+            echo "Authenticating AWS ECR..."
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+            echo "Pulling latest Docker image..."
+            docker pull ${{ secrets.ECR_URL }}:latest
+
+            echo "Stopping existing containers..."
+            docker stop my-app || true
+            docker rm my-app || true
+
+            echo "Ensuring port 8000 is free..."
+            PIDS=$(sudo lsof -t -i :8000 || true)
+            if [ -n "$PIDS" ]; then
+              echo "Stopping processes using port 8000: $PIDS"
+              sudo kill -9 $PIDS
+            fi
+
+            echo "Cleaning up dangling Docker containers..."
+            docker container prune -f
+
+            echo "Running new container on port 8000..."
+            docker run -d -p 8000:8000 --name my-app ${{ secrets.ECR_URL }}:latest
+
+            echo "Checking container status..."
+            for i in {1..10}; do
+              STATUS=$(docker inspect -f '{{.State.Status}}' my-app || echo "not-found")
+              if [ "$STATUS" == "running" ]; then
+                echo "Container is running!"
+                break
+              else
+                echo "Waiting for container to start. Current status: $STATUS"
+                sleep 10
+              fi
+            done
+
+            if [ "$STATUS" != "running" ]; then
+              echo "Container failed to start."
+              docker logs my-app
+              exit 1
+            fi
+
+            echo "Configuring Caddy to reverse proxy to port 8000..."
+            echo ":80 {
+                reverse_proxy localhost:8000
+            }" | sudo tee /etc/caddy/Caddyfile
+
+            echo "Restarting Caddy to apply the new configuration..."
+            sudo systemctl restart caddy
