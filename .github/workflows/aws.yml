@@ -46,6 +46,9 @@ jobs:
             docker stop my-app || true
             docker rm my-app || true
 
+            echo "Authenticating with AWS ECR..."
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
             echo "Pulling Docker image from ECR..."
             docker pull ${{ secrets.ECR_URL }}:latest
 
