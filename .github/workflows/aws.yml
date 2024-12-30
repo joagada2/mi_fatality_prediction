@@ -51,6 +51,10 @@ jobs:
               sudo apt-get install -y docker.io
             fi
 
+            # Ensure the user is added to the Docker group
+            echo "Adding user to Docker group..."
+            sudo usermod -aG docker $USER
+
             # Install unzip if not installed
             echo "Checking unzip installation..."
             if ! command -v unzip &> /dev/null; then
@@ -85,6 +89,9 @@ jobs:
               sudo DEBIAN_FRONTEND=noninteractive apt update
               sudo DEBIAN_FRONTEND=noninteractive apt install -y caddy
             fi
+
+            # Refresh the group membership
+            newgrp docker
 
             # Authenticate with AWS ECR
             echo "Authenticating with AWS ECR..."
