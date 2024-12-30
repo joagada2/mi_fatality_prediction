@@ -73,7 +73,7 @@ jobs:
 
             # Identify and stop process using port 8000
             echo "Checking for processes using port 8000..."
-            PID=$(sudo lsof -t -i :8000)
+            PID=$(sudo netstat -tuln | grep :8000 | awk '{print $7}' | cut -d'/' -f1)
             if [ -n "$PID" ]; then
               echo "Stopping process $PID using port 8000..."
               sudo kill -9 $PID
@@ -86,7 +86,7 @@ jobs:
 
             # Ensure port 8000 is free
             echo "Ensuring port 8000 is free..."
-            PID=$(sudo lsof -t -i :8000)
+            PID=$(sudo netstat -tuln | grep :8000 | awk '{print $7}' | cut -d'/' -f1)
             if [ -n "$PID" ]; then
               echo "Port 8000 is still in use by process $PID, stopping it..."
               sudo kill -9 $PID
