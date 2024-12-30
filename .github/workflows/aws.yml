@@ -78,22 +78,6 @@ jobs:
             aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws configure set default.region ${{ secrets.AWS_REGION }}
 
-            # Install Caddy if not installed
-            echo "Checking Caddy installation..."
-            if ! command -v caddy &> /dev/null; then
-              echo "Installing Caddy..."
-              sudo DEBIAN_FRONTEND=noninteractive apt update
-              sudo DEBIAN_FRONTEND=noninteractive apt install -y debian-keyring debian-archive-keyring apt-transport-https
-              curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-              curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-              sudo DEBIAN_FRONTEND=noninteractive apt update
-              sudo DEBIAN_FRONTEND=noninteractive apt install -y caddy
-            fi
-
-            # Refresh the group membership
-            echo "Refreshing the group membership..."
-            exec sudo su -l $USER
-
             # Authenticate with AWS ECR
             echo "Authenticating with AWS ECR..."
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
@@ -125,14 +109,27 @@ jobs:
 
             # Run the Docker container
             echo "Running new container..."
-            docker run -d -p 8000:8000 --name my-app ${{ secrets.ECR_URL }}:latest
+            docker network create my-network || true
+            docker run -d --network my-network -p 8000:8000 --name my-app -e ENV_VAR1=value1 -e ENV_VAR2=value2 ${{ secrets.ECR_URL }}:latest
 
-            # Check and log container status
-            echo "Checking container status..."
-            if [ "$(docker inspect -f '{{.State.Running}}' my-app)" == "false" ]; then
-              echo "Container my-app is not running, checking logs and details..."
+            # Health check monitoring
+            echo "Monitoring container health..."
+            for i in {1..10}; do
+              STATUS=$(docker inspect -f '{{.State.Health.Status}}' my-app || echo "not-found")
+              if [ "$STATUS" == "healthy" ]; then
+                echo "Container is healthy!"
+                break
+              elif [ "$STATUS" == "not-found" ]; then
+                echo "Container not found. Retrying..."
+              else
+                echo "Waiting for container to become healthy. Current status: $STATUS"
+                sleep 10
+              fi
+            done
+
+            if [ "$STATUS" != "healthy" ]; then
+              echo "Container health check failed after 100 seconds."
               docker logs my-app
-              docker inspect my-app
               exit 1
             fi
 
