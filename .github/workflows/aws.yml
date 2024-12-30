@@ -91,7 +91,8 @@ jobs:
             fi
 
             # Refresh the group membership
-            newgrp docker
+            echo "Refreshing the group membership..."
+            exec sudo su -l $USER
 
             # Authenticate with AWS ECR
             echo "Authenticating with AWS ECR..."
