@@ -45,6 +45,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            set -e
             echo "Stopping and removing old containers..."
             docker stop my-app || true
             docker rm my-app || true
@@ -54,3 +55,10 @@ jobs:
 
             echo "Running new container..."
             docker run -d -p 80:80 --name my-app ${{ secrets.ECR_URL }}:latest
+        env:
+          ECR_URL: ${{ secrets.ECR_URL }}
+
+      # Debugging SSH Connection
+      - name: Test SSH Connection
+        run: |
+          ssh -i ${{ secrets.SSH_PRIVATE_KEY }} -o StrictHostKeyChecking=no ${{ secrets.USER }}@${{ secrets.EC2_HOST }} "echo SSH connection successful"
