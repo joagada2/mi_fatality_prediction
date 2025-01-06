@@ -1,5 +1,5 @@
 # CLASSIFICATION SYSTEM FOR PREDICTING OUTCOME IN PATIENCE WITH MYOCARDIAL INFARCTION
-When patients are hospitalized for myocardial infarction, the first 3 days are critical because of the high chances of fatality from various types of complications. There is a state-of-the-art paper by Ghafari et al (citation: Ghafari R, Sorayaie Azar A, Ghafari A, Moradabadi Aghdam F, Valizadeh M, Khalili N, et al. Predicttion of the Fatal Acute Complications of Myocardial Infarction via Machine Learning Algorithms. J Teh Univ Heart Ctr 2023;18(4):278-287) which built a machine learning model to predict fatality in myocardial infarction patients within their first 3 days of admission. I identified 2 major loophole in the paper which I decided to build a new model with the same data to address these loophole and also produce a full production grade machine learning system. The paper was aimed at predicting fatality however, instead of treating the class for the patients that died within 3 days in the training set as the positive class, the paper treated the class of those that survived the first 3 days as positive class. With this, sensitivity and specificity were interchanged and sensitivity which is the most important matric was reported to be 0.9435 instead of 0.6923 which was wrongly reported as the specificity. The second problem identified was the common problem of class imbalance which is normal for most real world dataset. The use of methods like SMOTE which is proven to improve performance significantly when used to address class imbalance was ignored. In my new model, I designated the positivie and negetive classes correctly and used SMOTE to address class imbalance thereby significantly improving the performance to at least 97% for all metrices. I thereafter converted the model to a full production grade machine learning system that can be integreated into any web or mobile applicatio. The steps and components of the machine learning system are discuused below:
+When patients are hospitalized for myocardial infarction, the first 3 days are critical because of the high chances of fatality from various types of complications. There is a state-of-the-art paper by Ghafari et al, (see paper [here](https://pmc.ncbi.nlm.nih.gov/articles/PMC11053239/)). which built a machine learning model to predict fatality in myocardial infarction patients within their first 3 days of admission. I identified 2 major loophole in the paper which I decided to build a new model with the same data to address these loophole and also produce a full production grade machine learning system. The paper was aimed at predicting fatality however, instead of treating the class for the patients that died within 3 days in the training set as the positive class, the paper treated the class of those that survived the first 3 days as positive class. With this, sensitivity and specificity were interchanged and sensitivity which is the most important matric was reported to be 0.9435 instead of 0.6923 which was wrongly reported as the specificity. The second problem identified was the common problem of class imbalance which is normal for most real world dataset. The use of methods like SMOTE which is proven to improve performance significantly when used to address class imbalance was ignored. In my new model, I designated the positivie and negetive classes correctly and used SMOTE to address class imbalance thereby significantly improving the performance to at least 97% for all metrices. I thereafter converted the model to a full production grade machine learning system that can be integreated into any web or mobile applicatio. The steps and components of the machine learning system are discuused below:
 
 ## PROJECT OVERVIEW/STEPS
 ### Dataset
@@ -53,25 +53,6 @@ git clone https://github.com/joagada2/mi_fatality_prediction.git
   - Prefect - For workflow orchestration
   - Git - For project version control
   - etc
-
-
-
-### Example Usage
-
-To train the model, run the following code:
-
-```python
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.datasets import make_classification
-
-# Generate synthetic data
-X, y = make_classification(n_samples=1000, n_features=20, random_state=42)
-
-# Train a Random Forest model
-model = RandomForestClassifier()
-model.fit(X, y)
-print("Model trained successfully!")
-
 
 
 
