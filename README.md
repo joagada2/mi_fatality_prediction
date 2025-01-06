@@ -28,6 +28,13 @@ Git was used for project version control
 ## USING THE PROJECT
 The following steps can be followed to clone and run the project
  -   Clone project by running: git clone
+ -   ### Clone the Repository
+
+To clone this repository, use the following command:
+
+```bash
+git clone https://github.com/username/repository.git
+
 '''bash https://github.com/joagada2/mi_fatality_prediction.git
    from your terminal.
  -   create a python 3.10 virtual environment and install requirements.txt including prefect 3.1.8, mlflow 2.19.0 and whylogs 1.6.4
