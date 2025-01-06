@@ -52,4 +52,22 @@ The following steps can be followed to clone and run the project
 
 
 
+### Example Usage
+
+To train the model, run the following code:
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.datasets import make_classification
+
+# Generate synthetic data
+X, y = make_classification(n_samples=1000, n_features=20, random_state=42)
+
+# Train a Random Forest model
+model = RandomForestClassifier()
+model.fit(X, y)
+print("Model trained successfully!")
+
+
+
 
