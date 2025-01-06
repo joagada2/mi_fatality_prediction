@@ -27,16 +27,9 @@ As seen earlier, all the worflows are automated meaning that there will be conti
 Git was used for project version control
 ## USING THE PROJECT
 The following steps can be followed to clone and run the project
- -   Clone project by running: git clone
- -   ### Clone the Repository
-
-To clone this repository, use the following command:
-
+ -   Clone project by running running the following command from git bash or command line:
 ```bash
-git clone https://github.com/username/repository.git
-
-'''bash https://github.com/joagada2/mi_fatality_prediction.git
-   from your terminal.
+bash https://github.com/joagada2/mi_fatality_prediction.git
  -   create a python 3.10 virtual environment and install requirements.txt including prefect 3.1.8, mlflow 2.19.0 and whylogs 1.6.4
  -   Change directory to the project by running the following command from your command line: cd mi_fatality_prediction (type cd mi and use shift + tab to autocomplete)
  -  To use the API, run the following command from your command line: python app/main.py
