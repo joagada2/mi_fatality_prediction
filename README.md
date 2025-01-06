@@ -31,10 +31,10 @@ The following steps can be followed to clone and run the project
 ```bash
 git clone https://github.com/joagada2/mi_fatality_prediction.git
 ```
- -   create a python 3.10 virtual environment and install requirements.txt including prefect 3.1.8, mlflow 2.19.0 and whylogs 1.6.4
+ -   Create a python 3.10 virtual environment and install requirements.txt including prefect 3.1.8, mlflow 2.19.0 and whylogs 1.6.4
  -   Change directory to the project by running the following command from your command line: cd mi_fatality_prediction (type cd mi and use shift + tab to autocomplete)
  -  To use the API, run the following command from your command line: python app/main.py
- -  To run the re-training pipeline, run the following command from your command line, from root directory, run cd src/prefect_orchestration and run python training_tasks.py. This will deploy the code to prefect server. Run prefect server start to start the ui and access the ui using http://localhost:4200
+ -  To run the re-training pipeline, run the following command from your command line, from root directory, run cd src/prefect_orchestration and run python training_tasks.py. This will deploy the code to prefect server. Run prefect server start to start the ui and access the ui on port 4200 by clicking [here](http://localhost:4200).
  -  To run/start the batch inferencing code, from project root directory, cd to the script by running cd batch inferencing and run python batch_inf_script.py to upload the code to prefect server and run tasks every seconds
  -  To run/start the whylabs continuous monitoring script, from root directory, run cd src/whylab_monitoring and run python monitoring_script.py. This will also deploy the code to prefect server and run successfully.
  -  Note the crone configuration if for the flows to run every second. This configuration can be changed to run the code at any interval of choice
