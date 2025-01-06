@@ -1,242 +1,55 @@
-# send request to the api from comand line
-curl -X POST http://3.17.13.87:80/predict \
-  -H "Content-Type: application/json" \
-  -d '[{ "AGE": 0,
-         "SEX": 0,
-         "INF_ANAM": 0,
-         "STENOK_AN": 0,
-         "FK_STENOK": 0,
-         "IBS_POST": 0,
-         "GB": 0,
-         "SIM_GIPERT": 0,
-         "DLIT_AG": 0,
-         "ZSN_A": 0,
-         "nr_11": 0,
-         "nr_01": 0,
-         "nr_02": 0,
-         "nr_03": 0,
-         "nr_04": 0,
-         "nr_07": 0,
-         "nr_08": 0,
-         "np_01": 0,
-         "np_04": 0,
-         "np_05": 0,
-         "np_07": 0,
-         "np_08": 0,
-         "np_09": 0,
-         "np_10": 0,
-         "endocr_01": 0,
-         "endocr_02": 0,
-         "endocr_03": 0,
-         "zab_leg_01": 0,
-         "zab_leg_02": 0,
-         "zab_leg_03": 0,
-         "zab_leg_04": 0,
-         "zab_leg_06": 0,
-         "S_AD_ORIT": 0,
-         "D_AD_ORIT": 0,
-         "O_L_POST": 0,
-         "K_SH_POST": 0,
-         "MP_TP_POST": 0,
-         "SVT_POST": 0,
-         "GT_POST": 0,
-         "FIB_G_POST": 0,
-         "ant_im": 0,
-         "lat_im": 0,
-         "inf_im": 0,
-         "post_im": 0,
-         "IM_PG_P": 0,
-         "ritm_ecg_p_01": 0,
-         "ritm_ecg_p_02": 0,
-         "ritm_ecg_p_04": 0,
-         "ritm_ecg_p_06": 0,
-         "ritm_ecg_p_07": 0,
-         "ritm_ecg_p_08": 0,
-         "n_r_ecg_p_01": 0,
-         "n_r_ecg_p_02": 0,
-         "n_r_ecg_p_03": 0,
-         "n_r_ecg_p_04": 0,
-         "n_r_ecg_p_05": 0,
-         "n_r_ecg_p_06": 0,
-         "n_r_ecg_p_08": 0,
-         "n_r_ecg_p_09": 0,
-         "n_r_ecg_p_10": 0,
-         "n_p_ecg_p_01": 0,
-         "n_p_ecg_p_03": 0,
-         "n_p_ecg_p_04": 0,
-         "n_p_ecg_p_05": 0,
-         "n_p_ecg_p_06": 0,
-         "n_p_ecg_p_07": 0,
-         "n_p_ecg_p_08": 0,
-         "n_p_ecg_p_09": 0,
-         "n_p_ecg_p_10": 0,
-         "n_p_ecg_p_11": 0,
-         "n_p_ecg_p_12": 0,
-         "fibr_ter_01": 0,
-         "fibr_ter_02": 0,
-         "fibr_ter_03": 0,
-         "fibr_ter_05": 0,
-         "fibr_ter_06": 0,
-         "fibr_ter_07": 0,
-         "fibr_ter_08": 0,
-         "GIPO_K": 0,
-         "K_BLOOD": 0,
-         "GIPER_NA": 0,
-         "NA_BLOOD": 0,
-         "ALT_BLOOD": 0,
-         "AST_BLOOD": 0,
-         "L_BLOOD": 0,
-         "ROE": 0,
-         "TIME_B_S": 0,
-         "R_AB_1_n": 0,
-         "R_AB_2_n": 0,
-         "R_AB_3_n": 0,
-         "NA_KB": 0,
-         "NOT_NA_KB": 0,
-         "LID_KB": 0,
-         "NITR_S": 0,
-         "NA_R_1_n": 0,
-         "NA_R_2_n": 0,
-         "NA_R_3_n": 0,
-         "NOT_NA_1_n": 0,
-         "NOT_NA_2_n": 0,
-         "NOT_NA_3_n": 0,
-         "LID_S_n": 0,
-         "B_BLOK_S_n": 0,
-         "ANT_CA_S_n": 0,
-         "GEPAR_S_n": 0,
-         "ASP_S_n": 0,
-         "TIKL_S_n": 0,
-         "TRENT_S_n": 0 }]'
+# CLASSIFICATION SYSTEM FOR PREDICTING OUTCOME IN PATIENCE WITH MYOCARDIAL INFARCTION
+When patients are hospitalized for myocardial infarction, the first 3 days are critical because of the high chances of fatality from various types of complications. There is a state-of-the-art paper by Ghafari et al (citation: Ghafari R, Sorayaie Azar A, Ghafari A, Moradabadi Aghdam F, Valizadeh M, Khalili N, et al. Predicttion of the Fatal Acute Complications of Myocardial Infarction via Machine Learning Algorithms. J Teh Univ Heart Ctr 2023;18(4):278-287) which built a machine learning model to predict fatality in myocardial infarction patients within their first 3 days of admission. I identified 2 major loophole in the paper which I decided to build a new model with the same data to address these loophole and also produce a full production grade machine learning system. The paper was aimed at predicting fatality however, instead of treating the class for the patients that died within 3 days in the training set as the positive class, the paper treated the class of those that survived the first 3 days as positive class. With this, sensitivity and specificity were interchanged and sensitivity which is the most important matric was reported to be 0.9435 instead of 0.6923 which was wrongly reported as the specificity. The second problem identified was the common problem of class imbalance which is normal for most real world dataset. The use of methods like SMOTE which is proven to improve performance significantly when used to address class imbalance was ignored. In my new model, I designated the positivie and negetive classes correctly and used SMOTE to address class imbalance thereby significantly improving the performance to at least 97% for all metrices. I thereafter converted the model to a full production grade machine learning system that can be integreated into any web or mobile applicatio. The steps and components of the machine learning system are discuused below:
 
-# python code for sending request to the api
-import requests
-import json
+## PROJECT OVERVIEW/STEPS
+### Dataset
+The dataset used in this project was collected from 1699 myocardial infarction (MI) patients admitted to the Krasnoyarsk Interdistrict Clinical Hospital (Russia) between 1992 and 1995, aiming to predict fatal complications within the first 72 hours of hospital admission. It includes 111 clinical and demographic variables such as age, sex, obesity, MI type, ECG conduction characteristics at admission, laboratory parameters (e.g., ALT, AST, potassium, sodium levels), underlying diseases (e.g., diabetes, hypertension, chronic heart failure), signs and symptoms (e.g., blood pressure, arrhythmias), and administered drugs during emergency and ICU care. The target outcome is binary, categorizing patients into those who survived (84.04%) and those who experienced fatal complications (15.94%) caused by conditions like cardiogenic shock, pulmonary edema, myocardial rupture, and ventricular fibrillation. The dataset, with 7.6% missing values handled using mean imputation, was balanced by oversampling the minority class using SMOTE.
+### Experimentation/Model Training
+The model training process involved the neccessary proprocessing and experimentation, leading to the choice of the optimal model. The preprocessing steps include diemsnionality reduction using different approach and arriving at different versions of dataset. Experimentaion involves fitting of 27 different algorithms to each of the versions of the dataset, out of which I select the combination of the best-performing algorithm and best-performing dataset. This is how I arrived at ExtratreesClassifier applied to the balanced version of the full dataset as my optimal strategy. 
+### Experiment Tracking
+Experiment registry and model tracking were done using MLFlow.
+### Workflow Orchestration
+Workflow orchestration is necessary to enable continuous model re-training, batch inferencing and continous monitoring. All the workflows (preprocessing, model training, model evaluation, batch inferencing and continuous monitoring workfloes) were orchestrated using prefect. There are 3 different flows. The first contain all tasks from data preprocessing, model training to model evaluation. The second flow contains all tasks for batch inferencing while the third flow contains all tasks for continuous monitoring of model in production. All the workflow can either be triggered to run manually or automatically at pre-determined time interval.
+### Model Serving
+The model was wrapped in a FastAPI
+### Remote Hosting of API
+The FastAPI was deployed to AWS EC2. The url for the API is http://18.222.206.16:8000/docs#/default/predict_post_predict_post
+### Continous Integration and Continous Deployment (CI/CD)
+I configured continuous integration and continuous deployment workflow for the project using GitHub Action. All the process of pusing the repository to AWS ECR and deploying the API to AWS EC2 were automated using Github Action CI/CD pipeline. 
+### Offline Inferencing
+Batch inferencing pipeline was also setup using Prefect. The pipeline searches through a an input folder at specified interval, picks any CSV file in the folder, preprocess the data, and use the model to assign label to the data. The confidence level for the prediction is also attached. After that, the pipeline deletes the original input from the input folder and sends the labeled dataset to an output folder.
+### Model Monitoring/Full Stack Observability
+Model inputs, outputs and metrics are being monitored continously for data drift, concept drift and performance decay. WhyLabs was used for this purpose.
+### Other Automation
+As seen earlier, all the worflows are automated meaning that there will be continuous update of the model without human intervention. Also, the CI/CD pipeline ensures automated pushing of updates to relevant AWS services (ECR and EC2). However, there is the need to also automate the pushing of updates from local repository to remote (github) repository. This was also automated with a bash script and a microsoft task that runs the script to automatically push update from local to remote repository at interval. With this, all steps have been fully automated.
+### Project Versioning
+Git was used for project version control
+## USING THE PROJECT
+The following steps can be followed to clone and run the project
+ -   Clone project by running: git clone https://github.com/joagada2/mi_fatality_prediction.git from your terminal.
+ -   create a python 3.10 virtual environment and install requirements.txt including prefect 3.1.8, mlflow 2.19.0 and whylogs 1.6.4
+ -   Change directory to the project by running the following command from your command line: cd mi_fatality_prediction (type cd mi and use shift + tab to autocomplete)
+ -  To use the API, run the following command from your command line: python app/main.py
+ -  To run the re-training pipeline, run the following command from your command line, from root directory, run cd src/prefect_orchestration and run python training_tasks.py. This will deploy the code to prefect server. Run prefect server start to start the ui and access the ui using http://localhost:4200
+ -  To run/start the batch inferencing code, from project root directory, cd to the script by running cd batch inferencing and run python batch_inf_script.py to upload the code to prefect server and run tasks every seconds
+ -  To run/start the whylabs continuous monitoring script, from root directory, run cd src/whylab_monitoring and run python monitoring_script.py. This will also deploy the code to prefect server and run successfully.
+ -  Note the crone configuration if for the flows to run every second. This configuration can be changed to run the code at any interval of choice
+ -  Note that ETL pipeline by data engineer is expected to suppy the data for re-training, batch inferencing and monitoring. The actual crone configuration should depend on how often new data are available
 
-# Define the URL of your FastAPI endpoint
-url = "http://3.15.147.119:8080/predict"
-
-# Create the JSON payload
-data = [{"AGE": 0,
-         "SEX": 0,
-         "INF_ANAM": 0,
-         "STENOK_AN": 0,
-         "FK_STENOK": 0,
-         "IBS_POST": 0,
-         "GB": 0,
-         "SIM_GIPERT": 0,
-         "DLIT_AG": 0,
-         "ZSN_A": 0,
-         "nr_11": 0,
-         "nr_01": 0,
-         "nr_02": 0,
-         "nr_03": 0,
-         "nr_04": 0,
-         "nr_07": 0,
-         "nr_08": 0,
-         "np_01": 0,
-         "np_04": 0,
-         "np_05": 0,
-         "np_07": 0,
-         "np_08": 0,
-         "np_09": 0,
-         "np_10": 0,
-         "endocr_01": 0,
-         "endocr_02": 0,
-         "endocr_03": 0,
-         "zab_leg_01": 0,
-         "zab_leg_02": 0,
-         "zab_leg_03": 0,
-         "zab_leg_04": 0,
-         "zab_leg_06": 0,
-         "S_AD_ORIT": 0,
-         "D_AD_ORIT": 0,
-         "O_L_POST": 0,
-         "K_SH_POST": 0,
-         "MP_TP_POST": 0,
-         "SVT_POST": 0,
-         "GT_POST": 0,
-         "FIB_G_POST": 0,
-         "ant_im": 0,
-         "lat_im": 0,
-         "inf_im": 0,
-         "post_im": 0,
-         "IM_PG_P": 0,
-         "ritm_ecg_p_01": 0,
-         "ritm_ecg_p_02": 0,
-         "ritm_ecg_p_04": 0,
-         "ritm_ecg_p_06": 0,
-         "ritm_ecg_p_07": 0,
-         "ritm_ecg_p_08": 0,
-         "n_r_ecg_p_01": 0,
-         "n_r_ecg_p_02": 0,
-         "n_r_ecg_p_03": 0,
-         "n_r_ecg_p_04": 0,
-         "n_r_ecg_p_05": 0,
-         "n_r_ecg_p_06": 0,
-         "n_r_ecg_p_08": 0,
-         "n_r_ecg_p_09": 0,
-         "n_r_ecg_p_10": 0,
-         "n_p_ecg_p_01": 0,
-         "n_p_ecg_p_03": 0,
-         "n_p_ecg_p_04": 0,
-         "n_p_ecg_p_05": 0,
-         "n_p_ecg_p_06": 0,
-         "n_p_ecg_p_07": 0,
-         "n_p_ecg_p_08": 0,
-         "n_p_ecg_p_09": 0,
-         "n_p_ecg_p_10": 0,
-         "n_p_ecg_p_11": 0,
-         "n_p_ecg_p_12": 0,
-         "fibr_ter_01": 0,
-         "fibr_ter_02": 0,
-         "fibr_ter_03": 0,
-         "fibr_ter_05": 0,
-         "fibr_ter_06": 0,
-         "fibr_ter_07": 0,
-         "fibr_ter_08": 0,
-         "GIPO_K": 0,
-         "K_BLOOD": 0,
-         "GIPER_NA": 0,
-         "NA_BLOOD": 0,
-         "ALT_BLOOD": 0,
-         "AST_BLOOD": 0,
-         "L_BLOOD": 0,
-         "ROE": 0,
-         "TIME_B_S": 0,
-         "R_AB_1_n": 0,
-         "R_AB_2_n": 0,
-         "R_AB_3_n": 0,
-         "NA_KB": 0,
-         "NOT_NA_KB": 0,
-         "LID_KB": 0,
-         "NITR_S": 0,
-         "NA_R_1_n": 0,
-         "NA_R_2_n": 0,
-         "NA_R_3_n": 0,
-         "NOT_NA_1_n": 0,
-         "NOT_NA_2_n": 0,
-         "NOT_NA_3_n": 0,
-         "LID_S_n": 0,
-         "B_BLOK_S_n": 0,
-         "ANT_CA_S_n": 0,
-         "GEPAR_S_n": 0,
-         "ASP_S_n": 0,
-         "TIKL_S_n": 0,
-         "TRENT_S_n": 0}]
-
-# Send the POST request
-response = requests.post(url, json=data)
-
-# Print the response status code and body
-print("Response Status Code:", response.status_code)
-print("Response Body:", response.json())
+ ## TOOLS/SKILLS USED IN THIS PROJECT
+  - Python (Pandas, matplotlib, seaborn, scikitlearn etc)
+  - Lazypredict - for experimentation
+  - ExtratreesClassifiers - for model training
+  - MLFlow - Experiment registry/tracking
+  - FastAPI - Model Serving
+  - AWS EC2 - API deployment
+  - AWS ECR - Repository management on AWS
+  - GitHub/GitHub Action - Code hosting and CI/CD pipeline
+  - WhyLabs - Continous monitoring of model in production
+  - Prefect - For workflow orchestration
+  - Git - For project version control
+  - etc
 
 
-User Sign-in URL
-https://430118853371.signin.aws.amazon.com/console
 
-# STEPS
-# Create aws account and IAM role
-# Install and configure aws CLI
-# Create Repository on ECR
+
