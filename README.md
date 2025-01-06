@@ -13,7 +13,8 @@ Workflow orchestration is necessary to enable continuous model re-training, batc
 ### Model Serving
 The model was wrapped in a FastAPI
 ### Remote Hosting of API
-The FastAPI was deployed to AWS EC2. The url for the API is http://18.222.206.16:8000/docs#/default/predict_post_predict_post
+The FastAPI was deployed to AWS EC2. To access the API through the IP address, click [here](http://18.222.206.16:8000/docs#/default/predict_post_predict_post)
+
 ### Continous Integration and Continous Deployment (CI/CD)
 I configured continuous integration and continuous deployment workflow for the project using GitHub Action. All the process of pusing the repository to AWS ECR and deploying the API to AWS EC2 were automated using Github Action CI/CD pipeline. 
 ### Offline Inferencing
@@ -26,7 +27,7 @@ As seen earlier, all the worflows are automated meaning that there will be conti
 Git was used for project version control
 ## USING THE PROJECT
 The following steps can be followed to clone and run the project
- -   Clone project by running: git clone https://github.com/joagada2/mi_fatality_prediction.git from your terminal.
+ -   Clone project by running: git clone '''bash https://github.com/joagada2/mi_fatality_prediction.git from your terminal.
  -   create a python 3.10 virtual environment and install requirements.txt including prefect 3.1.8, mlflow 2.19.0 and whylogs 1.6.4
  -   Change directory to the project by running the following command from your command line: cd mi_fatality_prediction (type cd mi and use shift + tab to autocomplete)
  -  To use the API, run the following command from your command line: python app/main.py
