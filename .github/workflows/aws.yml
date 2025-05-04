@@ -1,33 +1,54 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline with Caddy
 
 on:
   push:
     branches:
       - main
 
+env:
+  ECR_REPO_NAME: my-app-repo  # Change this to your desired repository name
+
 jobs:
+  create-ecr-repository:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Create ECR Repository
+        run: |
+          # Check if repository exists, create if it doesn't
+          aws ecr describe-repositories --repository-names ${{ env.ECR_REPO_NAME }} || \
+          aws ecr create-repository --repository-name ${{ env.ECR_REPO_NAME }}
+          echo "ECR_REPO_URL=$(aws ecr describe-repositories --repository-names ${{ env.ECR_REPO_NAME }} --query 'repositories[0].repositoryUri' --output text)" >> $GITHUB_ENV
+
   deploy:
+    needs: create-ecr-repository
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Authenticate to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Build and Push Docker Image
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, Tag, and Push Docker Image
         run: |
-          docker build -t ${{ secrets.ECR_URL }}:latest .
-          docker push ${{ secrets.ECR_URL }}:latest
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          docker build -t ${{ env.ECR_REPO_URL }}:latest .
+          docker push ${{ env.ECR_REPO_URL }}:latest
 
       - name: Deploy Application via SSH
         uses: appleboy/ssh-action@v0.1.10
@@ -42,51 +63,43 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y docker.io curl
 
+            echo "Installing Caddy..."
+            sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+            curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+            curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+            sudo apt update
+            sudo apt install -y caddy
+
             echo "Authenticating AWS ECR..."
             aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
             echo "Pulling latest Docker image..."
-            docker pull ${{ secrets.ECR_URL }}:latest
+            docker pull ${{ env.ECR_REPO_URL }}:latest
 
             echo "Stopping existing containers..."
             docker stop my-app || true
             docker rm my-app || true
 
-            echo "Ensuring port 8000 is free..."
-            PIDS=$(sudo lsof -t -i :8000 || true)
-            if [ -n "$PIDS" ]; then
-              echo "Stopping processes using port 8000: $PIDS"
-              sudo kill -9 $PIDS
-            fi
-
-            echo "Cleaning up dangling Docker containers..."
-            docker container prune -f
-
             echo "Running new container on port 8000..."
-            docker run -d -p 8000:8000 --name my-app ${{ secrets.ECR_URL }}:latest
+            docker run -d -p 8000:8000 --name my-app ${{ env.ECR_REPO_URL }}:latest
 
-            echo "Checking container status..."
-            for i in {1..10}; do
-              STATUS=$(docker inspect -f '{{.State.Status}}' my-app || echo "not-found")
-              if [ "$STATUS" == "running" ]; then
-                echo "Container is running!"
-                break
-              else
-                echo "Waiting for container to start. Current status: $STATUS"
-                sleep 10
-              fi
-            done
-
-            if [ "$STATUS" != "running" ]; then
-              echo "Container failed to start."
-              docker logs my-app
-              exit 1
-            fi
-
-            echo "Configuring Caddy to reverse proxy to port 8000..."
-            echo ":80 {
+            echo "Configuring Caddy..."
+            sudo tee /etc/caddy/Caddyfile <<EOF
+            ${{ secrets.DOMAIN_NAME || 'localhost' }} {
                 reverse_proxy localhost:8000
-            }" | sudo tee /etc/caddy/Caddyfile
+                encode gzip
+                header {
+                    Strict-Transport-Security "max-age=31536000;"
+                    X-Content-Type-Options nosniff
+                    X-Frame-Options DENY
+                    Referrer-Policy no-referrer-when-downgrade
+                }
+            }
+            EOF
 
-            echo "Restarting Caddy to apply the new configuration..."
+            echo "Restarting Caddy..."
             sudo systemctl restart caddy
+
+            echo "Verifying deployment..."
+            sleep 5
+            curl -I http://localhost || curl -I http://localhost:80
